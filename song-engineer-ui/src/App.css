@@ -80,10 +80,11 @@ header {
 .main-layout { display: flex; position: relative; height: calc(100vh - 60px); }
 
 .editor-container {
-  display: flex !important; /* Gutter on left, Editor on right */
-  flex-direction: row !important;
   flex: 1;
-  overflow: hidden; /* We handle scrolling inside the textarea */
+  display: flex;
+  position: relative;
+  background: #161616;
+  overflow: hidden; 
 }
 
 /* --- SYLLABLE GUTTER FIX --- */
@@ -319,9 +320,10 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 
 /* --- SYNTAX HIGHLIGHTING IDE --- */
 .editor-wrapper {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* --- THE FIX: PIXEL-PERFECT ALIGNMENT --- */
