@@ -498,9 +498,8 @@ function App() {
   }, {});
 
   return (
-    <div className="dashboard">
-      <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        
+    <div className="dashboard" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <header style={{ flexShrink: 0 }}>
         {/* RESTORED GRAPEFRUIT LOGO */}
         <div className="brand" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
           <svg className="w-8 h-8 text-[#ff4b4b]" style={{width: '32px', height: '32px', color: '#ff4b4b'}} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -535,7 +534,7 @@ function App() {
       </header>
 
       <div className="main-layout">
-        <div className="editor-container" style={{ position: 'relative' }}>
+        <div className="editor-container" style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
           
           <div className="syllable-gutter" ref={gutterRef}>
             {lines.map((line, i) => {
@@ -577,7 +576,7 @@ function App() {
         </div>
 
         {/* This Side Nav transforms into the Bottom Tab Bar on Mobile via CSS */}
-        <div className="side-nav">
+        <div className="side-nav" style={{ flexShrink: 0 }}>
           <button onClick={() => setActiveMenu(activeMenu === 'palette' ? null : 'palette')} className={activeMenu === 'palette' ? 'nav-btn active' : 'nav-btn'} title="Harmonic Palette">🎹</button>
           <button onClick={() => setActiveMenu(activeMenu === 'progressions' ? null : 'progressions')} className={activeMenu === 'progressions' ? 'nav-btn active' : 'nav-btn'} title="Chord Progressions">🎸</button>
           <button onClick={() => setActiveMenu(activeMenu === 'words' ? null : 'words')} className={activeMenu === 'words' ? 'nav-btn active' : 'nav-btn'} title="Word Finder">🔍</button>
