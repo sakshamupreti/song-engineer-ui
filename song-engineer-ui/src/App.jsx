@@ -459,14 +459,16 @@ function App() {
   }, [searchWord, activeWordTool, rhymeType, syllableFilter, songTopic]);
 
   const handleScroll = (e) => {
-    const { scrollTop } = e.target;
+    // Grab both the vertical (Y) and horizontal (X) scroll positions
+    const { scrollTop, scrollLeft } = e.target;
     
-    // Update the Backdrop (the colors)
+    // Sync the colors (Backdrop) both up/down and left/right
     if (backdropRef.current) {
       backdropRef.current.scrollTop = scrollTop;
+      backdropRef.current.scrollLeft = scrollLeft; 
     }
     
-    // Update the Gutter (the numbers)
+    // Sync the numbers (Gutter) only up/down
     if (gutterRef.current) {
       gutterRef.current.scrollTop = scrollTop;
     }

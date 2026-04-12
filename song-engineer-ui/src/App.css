@@ -330,28 +330,29 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 /* --- THE FIX: PIXEL-PERFECT ALIGNMENT --- */
 .editor-textarea,
 .editor-backdrop {
-  /* Use the exact same font settings */
-  font-family: 'Courier New', -apple-system, 'Courier New' !important;
-  font-size: 1rem !important;
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 1.1rem !important; 
   line-height: 1.6 !important;
   padding: 20px !important;
   margin: 0 !important;
   border: 1px solid transparent !important;
-  white-space: pre-wrap !important;
-  word-wrap: break-word !important;
   box-sizing: border-box !important;
   text-align: left !important;
   display: block !important;
-  /* Ensure no flexbox centering is interfering */
   align-items: flex-start !important;
   justify-content: flex-start !important;
-  
-  /* Ensure they start at the exact same coordinate */
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
+  
+  /* THE FIX: Disable word wrapping so the lines always match the gutter */
+  white-space: pre !important; 
+  word-wrap: normal !important; 
+  
+  /* Allow horizontal scrolling for very long lines on mobile */
+  overflow-x: auto !important; 
 }
 
 .editor-textarea {
