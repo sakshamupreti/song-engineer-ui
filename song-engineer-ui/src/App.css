@@ -121,10 +121,12 @@ header {
 
 /* --- THE FIX: PIXEL-PERFECT ALIGNMENT --- */
 .editor-wrapper {
-  flex: 1 !important; /* Forces it to fill the screen next to the gutter */
+  flex: 1 !important;
   position: relative !important;
   height: 100% !important;
-  overflow: hidden !important; 
+  overflow: hidden !important;
+  min-width: 0 !important;  /* Same strict lock here */
+  min-height: 0 !important; 
 }
 
 .editor-textarea,
@@ -133,21 +135,20 @@ header {
   font-family: 'Courier New', Courier, monospace !important;
   font-size: 1rem !important; 
   line-height: 1.6 !important;
-  
-  /* 4. PADDING MATCH: Identical to gutter */
   padding: 20px !important;
   margin: 0 !important;
   border: 1px solid transparent !important;
   box-sizing: border-box !important;
   text-align: left !important;
   display: block !important;
+  
+  /* THE FIX: Staple all 4 corners to the wrapper */
   position: absolute !important;
   top: 0 !important;
+  bottom: 0 !important; 
   left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
+  right: 0 !important;
   
-  /* Disable word wrapping so lines never visually break the syllable count */
   white-space: pre !important; 
   word-wrap: normal !important; 
 }
@@ -545,12 +546,13 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 
   /* 4. EDITOR CONTAINER */
   .editor-container {
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: row !important; 
-    position: relative !important;
-    padding-bottom: 0 !important;
-    overflow: hidden !important;
+    flex: 1;
+    display: flex;
+    position: relative;
+    background: #161616;
+    overflow: hidden !important; 
+    min-width: 0 !important;  /* 2. THE FIX: Forces flexbox to stop growing horizontally */
+    min-height: 0 !important; /* 3. THE FIX: Forces flexbox to stop growing vertically */
   }
 
   /* 5. DRAWER: Pops up right above the new bottom menu */
