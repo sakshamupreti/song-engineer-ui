@@ -33,31 +33,36 @@ async def fetch_datamuse(params: dict):
             except Exception:
                 return []
 
-# --- GRAMMAR & LINGUISTICS ENGINES ---
+# ==================== GRAMMAR & LINGUISTICS ENGINES ====================
+
 def get_article(word: str) -> str:
-    if not word: return "a"
+    if not word:
+        return "a"
     return "an" if word[0].lower() in "aeiou" else "a"
 
 def get_verb(word: str) -> str:
     word = word.lower().strip()
     irregular_plurals = {"people", "children", "men", "women", "teeth", "feet", "mice", "leaves", "lives"}
-    if word in irregular_plurals: return "are"
+    if word in irregular_plurals:
+        return "are"
     singular_endings = ("ss", "ics", "news", "us", "is")
-    if word.endswith(singular_endings): return "is"
-    if word.endswith('s'): return "are"
+    if word.endswith(singular_endings):
+        return "is"
+    if word.endswith('s'):
+        return "are"
     return "is"
 
 def get_stress_pattern(tags: list) -> str:
-    """Extract stress pattern from Datamuse tags (e.g. pron:0 or pron:1)"""
+    """Extract stress pattern from Datamuse pronunciation tags"""
     for tag in tags:
         if tag.startswith("pron:"):
             pron = tag[5:]
             pattern = ""
             for char in pron:
                 if char == '0':
-                    pattern += "◦"   # unstressed
+                    pattern += "◦"  # unstressed
                 elif char in ('1', '2'):
-                    pattern += "•"   # stressed
+                    pattern += "•"  # stressed
             return pattern
     return ""
 
@@ -79,15 +84,15 @@ BORING_CONCEPTS = {
     "gain", "system", "level", "reason", "period"
 }
 
-# --- NEW: SMART METAPHOR ARTICLE (fully tuned to your expansive dictionary) ---
+# --- SMART METAPHOR ARTICLE (correctly handles "a", "an", and no article) ---
 def get_metaphor_article(noun: str) -> str:
-    """Returns '' (no article), 'a ', or 'an ' — optimized for CONCEPTUAL_MAPPINGS"""
+    """Returns '', 'a ', or 'an ' — fixed for words like 'echo', 'ocean', 'abyss' etc."""
     if not noun:
         return ""
     
     noun_lower = noun.lower().strip()
     
-    # Mass/uncountable/poetic sources that sound better WITHOUT "a/an"
+    # Words that sound better in metaphors WITHOUT any article
     no_article = {
         "fire", "flame", "heat", "cold", "darkness", "light", "shadow", "echo", "void", "chaos",
         "madness", "gravity", "poison", "pressure", "storm", "wind", "rain", "fog", "mist",
@@ -101,50 +106,48 @@ def get_metaphor_article(noun: str) -> str:
         "dark", "silence", "noise", "whisper", "howl", "constellation", "starlight", "magnetism",
         "electricity", "current", "undertow", "flood", "drowning", "sinking", "rising", "falling",
         "burning", "smoldering", "flicker", "pressure cooker", "tangled vine", "labyrinth", "canvas",
-        "tapestry", "mosaic", "constellation", "wheel", "season", "dream", "plant", "battle", "game",
-        "book", "story", "play", "journey", "day", "night", "harvest", "sleep", "abyss", "door",
-        "thief", "reaper", "destination", "compass", "north star", "anchor", "chameleon", "tide",
-        "alchemy", "phoenix", "caterpillar", "forge", "kaleidoscope", "garden", "shelter", "drug",
-        "knot", "canvas", "storm", "vine", "feast", "addiction", "balm", "weight", "descent",
-        "winter", "illness", "veil", "desert", "cloud", "pit", "ascent", "vitality", "intoxication",
-        "monster", "predator", "ghost", "disease", "web", "cliff", "tightrope", "stone", "wound",
-        "fog", "thief", "hunger", "thirst", "itch", "animal", "stain", "nakedness", "smallness",
-        "scarlet letter", "height", "swelling", "armor", "crown", "monument", "sun", "lion",
-        "machine", "container", "garden", "mirror", "computer", "sky", "labyrinth", "muscle",
-        "sponge", "engine", "food", "plant", "light", "building block", "virus", "spark",
-        "storehouse", "museum", "photograph", "scar", "anchor", "fabric", "treasure", "vault",
-        "flight", "canvas", "theater", "magic", "wildfire", "ocean", "horizon", "conduit",
-        "bridge", "dance", "combat", "music", "transaction", "weapons", "threads", "keys",
-        "seeds", "coins", "spells", "stones", "daggers", "war", "building", "journey", "game",
-        "wrestling match", "chess", "fabrics", "tapestries", "webs", "labyrinths", "mirrors",
-        "accounting", "straightness", "cleanliness", "light", "balance", "weight", "path",
-        "fabric", "organism", "ship", "hive", "physical bond", "investment", "contract",
-        "shelter", "dance", "up", "possession", "size", "electricity", "weapon", "scales",
-        "blindfold", "sword", "harvest", "organism", "machine", "weather", "fluid", "race",
-        "engine", "family", "person", "house", "body", "tree", "fortress", "mosaic", "orchestra",
-        "motion", "weaving", "fighting", "cultivating", "burden", "impediment", "obstacle",
-        "maze", "knot", "wall", "mountain", "mud", "destination", "wealth", "crown", "peak",
+        "tapestry", "mosaic", "wheel", "season", "dream", "plant", "battle", "game", "book",
+        "story", "play", "journey", "day", "night", "harvest", "sleep", "abyss", "door", "thief",
+        "reaper", "destination", "compass", "north star", "anchor", "chameleon", "alchemy",
+        "phoenix", "caterpillar", "forge", "kaleidoscope", "garden", "shelter", "drug", "knot",
+        "vine", "feast", "addiction", "balm", "weight", "descent", "illness", "veil", "desert",
+        "cloud", "pit", "vitality", "intoxication", "monster", "predator", "ghost", "disease",
+        "web", "cliff", "tightrope", "stone", "wound", "fog", "hunger", "thirst", "itch", "animal",
+        "stain", "nakedness", "smallness", "scarlet letter", "height", "swelling", "armor", "crown",
+        "monument", "sun", "lion", "machine", "container", "mirror", "computer", "sky", "muscle",
+        "sponge", "engine", "food", "light", "building block", "virus", "spark", "storehouse",
+        "museum", "photograph", "scar", "anchor", "fabric", "treasure", "vault", "theater", "magic",
+        "conduit", "bridge", "combat", "transaction", "weapons", "threads", "keys", "seeds", "coins",
+        "spells", "stones", "daggers", "war", "building", "wrestling match", "chess", "fabrics",
+        "tapestries", "webs", "labyrinths", "mirrors", "accounting", "straightness", "cleanliness",
+        "balance", "path", "fabric", "organism", "ship", "hive", "physical bond", "investment",
+        "contract", "up", "possession", "size", "electricity", "weapon", "scales", "blindfold",
+        "sword", "harvest", "race", "family", "person", "house", "body", "tree", "fortress",
+        "orchestra", "motion", "weaving", "fighting", "cultivating", "burden", "impediment",
+        "obstacle", "maze", "knot", "wall", "mountain", "mud", "destination", "wealth", "peak",
         "summit", "trophy", "down", "falling", "shipwreck", "ruin", "crash", "alignment",
-        "solid object", "unhidden thing", "mirror", "sword", "compass", "nakedness", "water",
-        "darkness", "cover", "twisting", "crookedness", "fabrication", "mask", "web", "smoke",
-        "door", "window", "path", "gift", "seed", "train", "tide"
+        "solid object", "unhidden thing", "nakedness", "water", "darkness", "cover", "twisting",
+        "crookedness", "fabrication", "mask", "web", "smoke", "door", "window", "path", "gift",
+        "seed", "train", "tide"
     }
     
     if noun_lower in no_article:
         return ""
     
-    # Plural sources (no article in most poetic contexts)
+    # Plural nouns usually take no article in poetic metaphors
     if noun_lower.endswith('s') and not noun_lower.endswith(('ss', 'us', 'is', 'cs', 'ys')):
         return ""
     
-    # Fall back to normal a/an for countable nouns
+    # Return "a " or "an " correctly for countable nouns
     return get_article(noun) + " "
 
 
 # ==================== MAIN METAPHOR ENDPOINT ====================
 @app.get("/api/phrases")
 async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
-    if not query: return {"phrases": []}
+    if not query:
+        return {"phrases": []}
+    
     formatted_phrases = []
     query_lower = query.lower().strip()
 
@@ -179,13 +182,15 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         if query_lower in CONCEPTUAL_MAPPINGS:
             source_extension_results = results[3:] 
             for i, source in enumerate(sources):
-                # Smart article for basic conceptual metaphors
                 article = get_metaphor_article(source)
                 phrase = f"{query.capitalize()} {verb} {article}{source}"
                 
                 if phrase.lower() not in seen:
                     seen.add(phrase.lower())
-                    formatted_phrases.append({"text": phrase, "meaning": f"🧠 BASIC CONCEPTUAL METAPHOR | Understanding the abstract target ({query}) through the concrete structure of a {source}."})
+                    formatted_phrases.append({
+                        "text": phrase,
+                        "meaning": f"🧠 BASIC CONCEPTUAL METAPHOR | Understanding the abstract target ({query}) through the concrete structure of a {source}."
+                    })
                 
                 dataset = source_extension_results[i]
                 for item in dataset:
@@ -195,22 +200,34 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                         extension = f"The {word} of {query}"
                         if extension.lower() not in seen:
                             seen.add(extension.lower())
-                            formatted_phrases.append({"text": extension.capitalize(), "meaning": f"🌿 POETIC EXTENSION | Extending the '{source}' mapping further down to its structural component ('{word}')."})
+                            formatted_phrases.append({
+                                "text": extension.capitalize(),
+                                "meaning": f"🌿 POETIC EXTENSION | Extending the '{source}' mapping further down to its structural component ('{word}')."
+                            })
 
         # Ontological metaphors
         for item in results[0]:
             word = item.get("word", "")
             tags = item.get("tags", [])
             if "n" in tags and " " not in word and word.lower() not in hypernyms and word.lower() != query_lower:
-                # Smart article for ontological metaphors
                 article = get_metaphor_article(word)
                 bold_metaphor = f"{query.capitalize()} {verb} {article}{word}"
                 if bold_metaphor.lower() not in seen:
                     seen.add(bold_metaphor.lower())
-                    formatted_phrases.append({"text": bold_metaphor, "meaning": f"🔗 ONTOLOGICAL MAPPING | Giving the abstract concept of '{query}' the physical boundaries and weight of a '{word}'."})
+                    formatted_phrases.append({
+                        "text": bold_metaphor,
+                        "meaning": f"🔗 ONTOLOGICAL MAPPING | Giving the abstract concept of '{query}' the physical boundaries and weight of a '{word}'."
+                    })
 
         # Poetic elaborations
-        valid_adjectives = [item["word"].lower() for item in results[1] if "adj" in item.get("tags", ["adj"]) and " " not in item["word"] and item["word"].lower() not in UNPOETIC_ADJS]
+        valid_adjectives = [
+            item["word"].lower() 
+            for item in results[1] 
+            if "adj" in item.get("tags", ["adj"]) 
+            and " " not in item["word"] 
+            and item["word"].lower() not in UNPOETIC_ADJS
+        ]
+        
         bridge_tasks = [fetch_datamuse({"rel_jja": adj, "md": "dp", "max": 5}) for adj in valid_adjectives[:8]]
         bridge_results = await asyncio.gather(*bridge_tasks) if bridge_tasks else []
 
@@ -220,12 +237,14 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                 word = item.get("word", "")
                 tags = item.get("tags", [])
                 if "n" in tags and " " not in word and word.lower() not in hypernyms and word.lower() != query_lower:
-                    # Smart article for poetic elaborations
                     article = get_metaphor_article(word)
                     bridge_metaphor = f"{query.capitalize()} {verb} {article}{anchor_adj} {word}"
                     if bridge_metaphor.lower() not in seen:
                         seen.add(bridge_metaphor.lower())
-                        formatted_phrases.append({"text": bridge_metaphor, "meaning": f"✨ POETIC ELABORATION | Filling in the source domain ('{word}') with highly specific, evocative traits ('{anchor_adj}')."})
+                        formatted_phrases.append({
+                            "text": bridge_metaphor,
+                            "meaning": f"✨ POETIC ELABORATION | Filling in the source domain ('{word}') with highly specific, evocative traits ('{anchor_adj}')."
+                        })
 
         return {"phrases": formatted_phrases}
 
@@ -235,7 +254,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
             fetch_datamuse({"rel_trg": query, "md": "dp", "max": 25}), 
             fetch_datamuse({"rel_jjb": query, "md": "p", "max": 15})
         ]
-        sources = CONCEPTUAL_MAPPINGS[query_lower]["sources"] if query_lower in CONCEPTUAL_MAPPINGS else []
+        sources = CONCEPTUAL_MAPPINGS.get(query_lower, {}).get("sources", [])
         results = await asyncio.gather(*tasks)
         verb = get_verb(query_lower)
 
@@ -244,7 +263,10 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                 phrase = f"{query.capitalize()} {verb} like a {source}"
                 if phrase.lower() not in seen:
                     seen.add(phrase.lower())
-                    formatted_phrases.append({"text": phrase, "meaning": f"🧠 CONCEPTUAL SIMILE | Explicitly comparing '{query}' to the structure of a {source}."})
+                    formatted_phrases.append({
+                        "text": phrase,
+                        "meaning": f"🧠 CONCEPTUAL SIMILE | Explicitly comparing '{query}' to the structure of a {source}."
+                    })
         
         for item in results[0]:
             word = item.get("word", "")
@@ -254,16 +276,30 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                 phrase = f"{query.capitalize()} {verb} like {article} {word}"
                 if phrase.lower() not in seen:
                     seen.add(phrase.lower())
-                    formatted_phrases.append({"text": phrase, "meaning": f"🔗 ASSOCIATIVE SIMILE | Likening the abstract concept of '{query}' to the physical presence of '{word}'."})
+                    formatted_phrases.append({
+                        "text": phrase,
+                        "meaning": f"🔗 ASSOCIATIVE SIMILE | Likening the abstract concept of '{query}' to the physical presence of '{word}'."
+                    })
 
-        valid_adjectives = [item["word"].lower() for item in results[1] if "adj" in item.get("tags", ["adj"]) and " " not in item["word"] and item["word"].lower() not in UNPOETIC_ADJS]
+        valid_adjectives = [
+            item["word"].lower() 
+            for item in results[1] 
+            if "adj" in item.get("tags", ["adj"]) 
+            and " " not in item["word"] 
+            and item["word"].lower() not in UNPOETIC_ADJS
+        ]
         for adj in valid_adjectives[:8]:
             phrase = f"As {adj} as {query}"
             if phrase.lower() not in seen:
                 seen.add(phrase.lower())
-                formatted_phrases.append({"text": phrase.capitalize(), "meaning": f"✨ DESCRIPTIVE SIMILE | Anchoring a comparison using the '{adj}' nature of {query}."})
+                formatted_phrases.append({
+                    "text": phrase.capitalize(),
+                    "meaning": f"✨ DESCRIPTIVE SIMILE | Anchoring a comparison using the '{adj}' nature of {query}."
+                })
 
         return {"phrases": formatted_phrases}
+
+    return {"phrases": formatted_phrases}
 
 # ==================== ADVANCED RHYTHMIC RHYME ENGINE ====================
 @app.get("/api/words")
