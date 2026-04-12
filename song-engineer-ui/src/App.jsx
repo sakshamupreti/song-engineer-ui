@@ -211,6 +211,38 @@ function App() {
     return () => clearTimeout(sequenceTimerRef.current);
   }, [playingProgIndex, playbackStyle, bpm]);
 
+  // --- PHRASE & METAPHOR ENGINE (Connected to Python Backend) ---
+  useEffect(() => {
+    // 1. If search is empty or too short, clear results
+    if (phraseSearch.trim().length < 2) { 
+      setPhrases([]); 
+      return; 
+    }
+    
+    // 2. The 300ms Debounce prevents you from spamming your own Render server
+    const delay = setTimeout(() => {
+      
+      // 3. Call your custom Python endpoint! 
+      // (Make sure this URL matches your actual Render backend URL)
+      fetch(`https://song-engineer-ui-2.onrender.com/api/phrases?query=${phraseSearch}&phrase_type=${activePhraseTab}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Render Backend failed to calculate");
+          return res.json();
+        })
+        .then(data => {
+          // 4. Your Python backend already formatted the data perfectly as {"text": "...", "meaning": "..."}
+          setPhrases(data.phrases || []);
+        })
+        .catch(err => {
+          console.error("Metaphor Engine Failure:", err);
+          setPhrases([]);
+        });
+        
+    }, 300);
+
+    return () => clearTimeout(delay);
+  }, [phraseSearch, activePhraseTab]); // Make sure activePhraseTab is back in the dependency array!
+
   const toggleProgression = async (index, actualChords) => {
     const ctx = getAudioCtx();
     if (ctx.state === 'suspended') await ctx.resume();
