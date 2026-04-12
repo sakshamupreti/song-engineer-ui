@@ -98,11 +98,11 @@ header {
   position: relative !important;
   display: flex;
   flex-direction: column;
-  background: #0f172a;
+  background: #121212;
   border-right: 1px solid #1e293b;
   width: 40px !important;
   flex-shrink: 0;
-  text-align: center !important;
+  align-items: center !important;
 }
 
 .gutter-line {
