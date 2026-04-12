@@ -175,7 +175,7 @@ function App() {
         osc.frequency.value = rootFreq * ratio;
         filter.type = 'lowpass';
         filter.frequency.value = 300;
-        gain.gain.value = 0.06;
+        gain.gain.value = 0.08;
         osc.connect(filter);
         filter.connect(gain);
         gain.connect(ctx.destination);
