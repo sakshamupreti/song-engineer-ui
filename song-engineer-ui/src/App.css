@@ -489,22 +489,54 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 /* =========================================
    MOBILE UI RESPONSIVE ARCHITECTURE
 ========================================= */
+/* =========================================
+   MOBILE UI RESPONSIVE ARCHITECTURE
+========================================= */
+
+/* 1. GLOBAL SCROLL LOCK: Kill all horizontal scrolling */
+html, body, #root {
+  overflow-x: hidden;
+  width: 100vw;
+  position: relative;
+}
+
+/* 2. FORCE 16px FONT: The ultimate iOS zoom prevention backup */
+input, textarea, select {
+  font-size: 16px !important; 
+}
+
 @media (max-width: 768px) {
-  /* 1. Stack the header elements so they don't squash */
+  /* 3. STACK THE HEADER: Override inline styles and force wrapping */
   header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding: 10px;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 15px 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   
-  .recording-bar {
-    flex-wrap: wrap;
-    justify-content: space-between;
+  .brand {
+    width: 100%;
+    justify-content: center;
   }
 
   .song-title-container {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .song-title-input {
+    width: 100% !important;
+    text-align: center;
+  }
+
+  /* 4. WRAP THE CONTROLS: Let the metronome drop to a new line if needed */
+  .recording-bar {
     width: 100%;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 8px !important;
   }
 
   /* 2. Switch main layout from Row to Column */
