@@ -7,13 +7,26 @@
   --bg-input: #2a2a2a;
 }
 
+/* ✅ ROOT FIX */
 html, body {
   margin: 0;
-  height: 100%; /* Locks the native browser screen */
+  height: 100%;
   font-family: 'Inter', -apple-system, sans-serif;
   background-color: var(--bg-dark);
   color: var(--text-main);
-  overflow: hidden; /* Hands all scroll control over to our React layout */
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0; /* 🔑 critical */
 }
 
 /* --- HEADER --- */
@@ -25,7 +38,7 @@ header {
   background: #1a1a1a;
   border-bottom: 1px solid #333;
   height: 60px;
-  flex-shrink: 0; /* Prevents header from ever squishing */
+  flex-shrink: 0;
 }
 
 .brand h1 { font-size: 0.9rem; font-weight: 800; letter-spacing: 2px; color: #666; text-transform: uppercase; }
@@ -78,14 +91,14 @@ header {
   font-size: 0.75rem;
 }
 
-/* --- THE FIX: PURE FLEXBOX BOUNDARIES --- */
+/* --- MAIN LAYOUT --- */
 .main-layout { 
   display: flex; 
-  flex: 1 !important; /* Replaces calc(). Takes exactly the remaining screen height */
+  flex: 1 !important;
   position: relative; 
   width: 100%;
   overflow: hidden !important;
-  min-height: 0 !important; /* Crucial: stops the infinite expansion bug */
+  min-height: 0 !important;
 }
 
 .editor-container {
@@ -98,14 +111,12 @@ header {
   min-height: 0 !important; 
 }
 
-/* --- SYLLABLE GUTTER --- */
+/* --- GUTTER --- */
 .syllable-gutter {
-  font-family: 'Courier New', Courier, monospace !important;
+  font-family: 'Courier New', monospace !important;
   font-size: 1rem !important; 
   line-height: 1.6 !important; 
-  padding-top: 20px !important; 
-  padding-bottom: 20px !important;
-  position: relative !important;
+  padding: 20px 0 !important;
   display: flex;
   flex-direction: column;
   background: #121212;
@@ -114,7 +125,9 @@ header {
   flex-shrink: 0;
   align-items: center !important;
   box-sizing: border-box !important;
-  overflow: hidden !important; 
+
+  /* 🔧 KEY CHANGE */
+  overflow: hidden;
 }
 
 .gutter-line {
@@ -126,18 +139,23 @@ header {
   flex-shrink: 0 !important; 
 }
 
-/* --- EDITOR & ALIGNMENT --- */
+/* --- EDITOR WRAPPER (SCROLL OWNER) --- */
 .editor-wrapper {
   flex: 1 !important;
   position: relative !important;
-  overflow: hidden !important;
+
+  /* 🔑 THE FIX */
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch;
+
   min-width: 0 !important;  
   min-height: 0 !important; 
 }
 
+/* --- TEXTAREA + BACKDROP --- */
 .editor-textarea,
 .editor-backdrop {
-  font-family: 'Courier New', Courier, monospace !important;
+  font-family: 'Courier New', monospace !important;
   font-size: 1rem !important; 
   line-height: 1.6 !important;
   padding: 20px !important;
@@ -145,19 +163,17 @@ header {
   border: 1px solid transparent !important;
   box-sizing: border-box !important;
   text-align: left !important;
-  display: block !important;
-  
-  /* THE FIX: Explicit width/height mapping forces the textarea to recognize boundaries and scroll */
+
   position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  
-  white-space: pre !important; 
-  word-wrap: normal !important; 
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 100%; /* 🔧 important */
+
+  white-space: pre !important;
 }
 
+/* TEXTAREA */
 .editor-textarea {
   background: transparent !important;
   color: transparent !important; 
@@ -165,18 +181,27 @@ header {
   z-index: 2;
   resize: none;
   outline: none !important;
-  
-  /* Native scrolling reinstated */
-  overflow-y: auto !important; 
-  overflow-x: auto !important; 
-  -webkit-overflow-scrolling: touch !important; 
+
+  /* 🔧 CHANGED */
+  overflow: hidden !important;
 }
 
+/* BACKDROP */
 .editor-backdrop {
   color: #e2e8f0; 
   z-index: 1;
   pointer-events: none; 
-  overflow: hidden !important; 
+}
+
+/* --- SCROLLBAR POLISH --- */
+.editor-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.editor-wrapper::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
 }
 
 /* IDE Syntax Styles */
@@ -201,7 +226,6 @@ header {
 .palette-settings-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
 .setting-item { flex: 1; }
 .setting-item label { display: block; font-size: 0.55rem; color: #444; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-weight: 700; }
-
 .mode-toggle-group { display: flex; background: rgba(255, 255, 255, 0.02); padding: 2px; border-radius: 6px; border: 1px solid #2a2a2a; height: 32px; box-sizing: border-box; }
 .mode-btn { flex: 1; background: transparent; border: none; color: #444; padding: 0 10px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; cursor: pointer; transition: 0.2s; }
 .mode-btn.active { color: #ff8a8a; background: rgba(255, 75, 75, 0.05); }
@@ -214,7 +238,6 @@ header {
 .drone-module.active .pulse-dot { background: var(--accent-blue); animation: drone-pulse 2s infinite; }
 @keyframes drone-pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
 
-/* Theory Tracker Aesthetic */
 .theory-tracker { border-top: 1px dashed #333; border-bottom: 1px dashed #333; padding: 15px 5px; margin-bottom: 25px; position: relative; }
 .theory-label { position: absolute; top: -8px; left: 10px; background: #1e1e1e; padding: 0 8px; font-size: 0.55rem; color: #555; text-transform: uppercase; letter-spacing: 1px; }
 .theory-value { font-size: 0.85rem; color: var(--accent-blue); font-weight: 700; margin-top: 5px; padding-left: 10px; }
@@ -227,7 +250,6 @@ header {
 .tag-name { font-weight: 700; font-size: 0.9rem; color: #fff;}
 .chord-tag.suggested .tag-name { color: #ff8a8a; }
 
-/* Word Library & Rhyme UI */
 .tool-tabs { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid #333; }
 .tab-btn { background: transparent; border: none; color: #444; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; cursor: pointer; padding: 5px 0; }
 .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
@@ -247,13 +269,11 @@ header {
 .sense-group { margin-bottom: 20px; border-top: 1px solid rgba(255, 255, 255, 0.03); padding-top: 12px; }
 .sense-label-minimal { font-size: 0.55rem; font-weight: 800; text-transform: uppercase; color: var(--accent-blue); letter-spacing: 1.5px; margin-bottom: 8px; display: block; }
 
-/* --- Phrase & Prompt Cards --- */
 .phrase-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); padding: 12px 15px; border-radius: 8px; cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
 .phrase-card:hover { border-color: var(--primary); background: rgba(255, 75, 75, 0.05); }
 .phrase-text { display: block; font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
 .phrase-meaning { display: block; font-size: 0.65rem; color: #888; line-height: 1.4; }
 
-/* --- Library Cards --- */
 .drum-preset-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); padding: 15px; border-radius: 12px; margin-bottom: 12px; transition: all 0.2s; }
 .drum-preset-card:hover { border-color: var(--accent-blue); background: rgba(0, 150, 255, 0.05); }
 .preset-name { display: block; font-size: 0.85rem; font-weight: 700; color: #fff; }
@@ -262,14 +282,12 @@ header {
 
 input[type="text"], input[type="number"], select { background: #2a2a2a; border: 1px solid #444; color: white; padding: 8px; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 0.85rem; outline: none;}
 
-/* --- VOICE MEMO & RECORDING --- */
 .recording-bar { display: flex; align-items: center; gap: 10px; background: #1e1e1e; padding: 5px 15px; border-radius: 20px; }
 .record-btn { background: transparent; border: 1px solid #444; color: white; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
 .record-btn.recording { background: #ff3b30; border-color: #ff3b30; animation: pulse-red 1.5s infinite; }
 @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); } }
 .custom-audio-player { height: 30px; width: 200px; border-radius: 15px; }
 
-/* --- PROGRESSION MENU --- */
 .progression-controls { background: #111; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
 .style-selector { display: flex; gap: 10px; margin-top: 10px; }
 .style-btn { flex: 1; background: #222; border: 1px solid #444; color: #ccc; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 0.85rem; }
@@ -283,19 +301,16 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 .prog-actions .play-btn { background: #22c55e; }
 .prog-actions .play-btn:hover { background: #16a34a; }
 
-/* --- MAGIC HIGHLIGHT BAR --- */
 .magic-tooltip { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: #222; border: 1px solid #444; padding: 8px 15px; border-radius: 30px; display: flex; gap: 10px; align-items: center; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.5); animation: slideUp 0.2s ease-out; }
 .magic-tooltip span { color: #888; font-size: 0.85rem; margin-right: 5px; }
 .magic-btn { background: #333; border: none; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
 .magic-btn:hover { background: #3b82f6; }
 
-/* --- SYLLABLE METER UPGRADES --- */
 .meter-config { display: flex; align-items: center; gap: 10px; background: #1e1e1e; padding: 5px 15px; border-radius: 20px; margin-right: auto; margin-left: 20px; }
 .meter-config input { background: #111; border: 1px solid #333; color: white; padding: 4px 8px; border-radius: 4px; width: 120px; font-family: monospace; }
 .meter-perfect { color: #22c55e !important; font-weight: bold; }
 .meter-off { color: #ef4444 !important; }
 
-/* --- PROSODY & STABILITY HIGHLIGHTS --- */
 .stable-stanza { border-left-color: #22c55e; background: linear-gradient(90deg, rgba(34, 197, 94, 0.05) 0%, transparent 100%); }
 .unstable-stanza { border-left-color: #eab308; background: linear-gradient(90deg, rgba(234, 179, 8, 0.05) 0%, transparent 100%); }
 .gutter-syl { color: #666; font-weight: bold; }
@@ -328,7 +343,7 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
   .main-layout {
     display: flex !important;
     flex-direction: column !important;
-    flex: 1 !important; /* Forces it to fit exactly within the screen boundaries */
+    flex: 1 !important;
     min-height: 0 !important;
     overflow: hidden !important;
   }

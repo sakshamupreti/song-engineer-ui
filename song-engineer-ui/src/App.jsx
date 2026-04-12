@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
-import { syllable } from 'syllable' 
-import './App.css'
+import { useState, useRef, useEffect } from 'react';
+import { syllable } from 'syllable';
+import './App.css';
 
 const NOTE_FREQS = {
   "C": 261.63, "C#": 277.18, "Db": 277.18, "D": 293.66, "D#": 311.13, "Eb": 311.13,
@@ -49,7 +49,7 @@ function App() {
   const [hoverInfo, setHoverInfo] = useState(null);
   
   const [songTopic, setSongTopic] = useState(""); 
-  const [wordMeter, setWordMeter] = useState(""); // <-- NEW: Scat meter strictly for word finder
+  const [wordMeter, setWordMeter] = useState(""); 
   
   const [searchWord, setSearchWord] = useState("");
   const [activeWordTool, setActiveWordTool] = useState("Rhymes");
@@ -83,17 +83,43 @@ function App() {
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const textAreaRef = useRef(null);
-  const editorRef = useRef(null);
-  const backdropRef = useRef(null);
-  const gutterRef = useRef(null);
+  
+  // --- HARDWARE WIRES (REFS) ---
+  const editorRef = useRef(null);   // Textarea
+  const backdropRef = useRef(null); // Colored Syntax
+  const gutterRef = useRef(null);   // Numbers
+  const wrapperRef = useRef(null);  // NEW: The Scroll Boss
+  
   const metronomeInterval = useRef(null);
   const droneNodes = useRef([]);
   const audioCtxRef = useRef(null);
 
   const allKeys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B", "Cm", "C#m", "Dm", "Ebm", "Em", "Fm", "F#m", "Gm", "G#m", "Am", "Bbm", "Bm"];
 
-  // --- 1. CORE AUDIO SYSTEM ---
+  // --- iOS AUDIO UNLOCKER ---
+  useEffect(() => {
+    const unlockAudioEngine = () => {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        const tempCtx = new AudioContext();
+        if (tempCtx.state === 'suspended') {
+          tempCtx.resume();
+        }
+      }
+      window.removeEventListener('touchstart', unlockAudioEngine);
+      window.removeEventListener('click', unlockAudioEngine);
+    };
+
+    window.addEventListener('touchstart', unlockAudioEngine, { once: true });
+    window.addEventListener('click', unlockAudioEngine, { once: true });
+
+    return () => {
+      window.removeEventListener('touchstart', unlockAudioEngine);
+      window.removeEventListener('click', unlockAudioEngine);
+    };
+  }, []);
+
+  // --- CORE AUDIO SYSTEM ---
   const getAudioCtx = () => {
     if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
     return audioCtxRef.current;
@@ -212,37 +238,56 @@ function App() {
     return () => clearTimeout(sequenceTimerRef.current);
   }, [playingProgIndex, playbackStyle, bpm]);
 
-  // --- PHRASE & METAPHOR ENGINE (Connected to Python Backend) ---
+  // --- API FETCH EFFECTS ---
   useEffect(() => {
-    // 1. If search is empty or too short, clear results
-    if (phraseSearch.trim().length < 2) { 
-      setPhrases([]); 
-      return; 
-    }
-    
-    // 2. The 300ms Debounce prevents you from spamming your own Render server
+    if (phraseSearch.trim().length < 2) { setPhrases([]); return; }
     const delay = setTimeout(() => {
-      
-      // 3. Call your custom Python endpoint! 
-      // (Make sure this URL matches your actual Render backend URL)
       fetch(`https://song-engineer-ui-2.onrender.com/api/phrases?query=${phraseSearch}&phrase_type=${activePhraseTab}`)
-        .then(res => {
-          if (!res.ok) throw new Error("Render Backend failed to calculate");
-          return res.json();
-        })
-        .then(data => {
-          // 4. Your Python backend already formatted the data perfectly as {"text": "...", "meaning": "..."}
-          setPhrases(data.phrases || []);
-        })
-        .catch(err => {
-          console.error("Metaphor Engine Failure:", err);
-          setPhrases([]);
-        });
-        
+        .then(res => res.json())
+        .then(data => setPhrases(data.phrases || []))
+        .catch(err => console.error("Metaphor Engine Failure:", err));
     }, 300);
-
     return () => clearTimeout(delay);
-  }, [phraseSearch, activePhraseTab]); // Make sure activePhraseTab is back in the dependency array!
+  }, [phraseSearch, activePhraseTab]);
+
+  useEffect(() => {
+    const fetchPalette = async () => {
+      try {
+        const chordMatches = lyrics.match(/\[([A-G][b#]?[a-zA-Z0-9]*[ø]?[7]?[b]?[5]?)\]/g);
+        let lastChord = "C"; 
+        if (chordMatches && chordMatches.length > 0) {
+          const lastFullMatch = chordMatches[chordMatches.length - 1];
+          lastChord = lastFullMatch.substring(1, lastFullMatch.length - 1);
+        }
+        const response = await fetch("https://song-engineer-ui-2.onrender.com/api/chords", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ last_chord: lastChord, key: projectKey, jazz_mode: jazzMode })
+        });
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        setPalette(data.full_palette || []); 
+        setSuggestions(data.suggestions || {});
+      } catch (err) {
+        console.error("Failed to fetch jazz palette:", err);
+        setPalette([{name: "C", roman: "I", group: "Diatonic"}]);
+      }
+    };
+    fetchPalette();
+  }, [jazzMode, projectKey, (lyrics.match(/\[.*?\]/g) || []).length]);
+
+  useEffect(() => {
+    if (searchWord.trim().length < 2) { setFoundWords(activeWordTool === "Imagery" ? {} : []); return; }
+    const delay = setTimeout(() => {
+      const sylParam = syllableFilter > 0 ? `&syllables=${syllableFilter}` : "";
+      const subParam = activeWordTool === "Rhymes" ? `&sub_type=${rhymeType}` : "";
+      const topicParam = songTopic.trim() ? `&topic=${encodeURIComponent(songTopic)}` : "";
+
+      fetch(`https://song-engineer-ui-2.onrender.com/api/words?word=${searchWord}&query_type=${activeWordTool}${subParam}${sylParam}${topicParam}`)
+        .then(res => res.json()).then(data => setFoundWords(data.categories ? data : data.words));
+    }, 300);
+    return () => clearTimeout(delay);
+  }, [searchWord, activeWordTool, rhymeType, syllableFilter, songTopic]);
 
   const toggleProgression = async (index, actualChords) => {
     const ctx = getAudioCtx();
@@ -264,7 +309,7 @@ function App() {
     osc.start(); osc.stop(ctx.currentTime + 0.05);
   };
 
-  // --- 3. VOICE MEMO RECORDER ---
+  // --- VOICE MEMO RECORDER ---
   const toggleRecording = async () => {
     if (isRecording) { mediaRecorderRef.current.stop(); setIsRecording(false); } else {
       try {
@@ -285,14 +330,14 @@ function App() {
 
   const deleteRecording = () => { if (window.confirm("Delete this voice memo?")) setAudioData(null); };
 
-  // --- 4. UTILITIES & IDE EVENTS ---
+  // --- UTILITIES & IDE EVENTS ---
   const insertAtCursor = (content) => {
-    const textArea = textAreaRef.current;
+    const textArea = editorRef.current;
     if (!textArea) return;
     const start = textArea.selectionStart; const end = textArea.selectionEnd;
     const newText = lyrics.substring(0, start) + content + lyrics.substring(end);
     setLyrics(newText);
-    setTimeout(() => { textArea.focus(); textArea.setSelectionRange(start + content.length, start + content.length); }, 0);
+    setTimeout(() => { textArea.focus(); textArea.setSelectionRange(start + content.length, start + content.length); }, 10);
   };
 
   const handleSelection = (e) => {
@@ -387,7 +432,7 @@ function App() {
     });
   };
 
-  // --- 6. EFFECTS ---
+  // --- LOCAL STORAGE SYNCS ---
   useEffect(() => {
     const savedLyrics = localStorage.getItem("song_engineer_lyrics");
     const savedTitle = localStorage.getItem("song_engineer_title");
@@ -412,74 +457,22 @@ function App() {
     return () => clearInterval(metronomeInterval.current);
   }, [isMetronomePlaying, bpm]);
 
-  useEffect(() => {
-    const fetchPalette = async () => {
-      try {
-        const chordMatches = lyrics.match(/\[([A-G][b#]?[a-zA-Z0-9]*[ø]?[7]?[b]?[5]?)\]/g);
-        let lastChord = "C"; 
-        if (chordMatches && chordMatches.length > 0) {
-          const lastFullMatch = chordMatches[chordMatches.length - 1];
-          lastChord = lastFullMatch.substring(1, lastFullMatch.length - 1);
-        }
+  // --- THE NEW SCROLL SYNC ENGINE ---
+  const handleScroll = () => {
+    if (!wrapperRef.current) return;
 
-        const response = await fetch("https://song-engineer-ui-2.onrender.com/api/chords", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            last_chord: lastChord, 
-            key: projectKey, 
-            jazz_mode: jazzMode 
-          })
-        });
-
-        if (!response.ok) throw new Error('Network response was not ok');
-        
-        const data = await response.json();
-        setPalette(data.full_palette || []); 
-        setSuggestions(data.suggestions || {});
-      } catch (err) {
-        console.error("Failed to fetch jazz palette:", err);
-        setPalette([{name: "C", roman: "I", group: "Diatonic"}]);
-      }
-    };
-
-    fetchPalette();
-  }, [jazzMode, projectKey, (lyrics.match(/\[.*?\]/g) || []).length]);
-
-  useEffect(() => {
-    if (searchWord.trim().length < 2) { setFoundWords(activeWordTool === "Imagery" ? {} : []); return; }
-    const delay = setTimeout(() => {
-      const sylParam = syllableFilter > 0 ? `&syllables=${syllableFilter}` : "";
-      const subParam = activeWordTool === "Rhymes" ? `&sub_type=${rhymeType}` : "";
-      const topicParam = songTopic.trim() ? `&topic=${encodeURIComponent(songTopic)}` : "";
-
-      fetch(`https://song-engineer-ui-2.onrender.com/api/words?word=${searchWord}&query_type=${activeWordTool}${subParam}${sylParam}${topicParam}`)
-        .then(res => res.json()).then(data => setFoundWords(data.categories ? data : data.words));
-    }, 300);
-    return () => clearTimeout(delay);
-  }, [searchWord, activeWordTool, rhymeType, syllableFilter, songTopic]);
-
-  const handleScroll = (e) => {
-
-    if (!editorRef.current) return;
-
-    // Grab both the vertical (Y) and horizontal (X) scroll positions
-    const currentScrollTop = editorRef.current.scrollTop;
-    const currentScrollLeft = editorRef.current.scrollLeft;
+    const currentScrollTop = wrapperRef.current.scrollTop;
+    const currentScrollLeft = wrapperRef.current.scrollLeft;
     
-    // Sync the colors (Backdrop) both up/down and left/right
     if (backdropRef.current) {
       backdropRef.current.scrollTop = currentScrollTop;
       backdropRef.current.scrollLeft = currentScrollLeft;
     }
-    
-    // Sync the numbers (Gutter) only up/down
     if (gutterRef.current) {
       gutterRef.current.scrollTop = currentScrollTop;
     }
   };
 
-  // --- NEW: Helper to parse scat pattern for filtering words ---
   const parseScat = (meterStr) => {
     if (!meterStr.trim()) return "";
     return meterStr.trim().split(/\s+/).map(w => {
@@ -488,7 +481,6 @@ function App() {
     }).join("");
   };
 
-  // Render function to apply local wordMeter filter
   const renderWordTags = (wordList) => {
     const targetStress = parseScat(wordMeter);
     const filtered = wordList.filter(item => !targetStress || item.stress === targetStress);
@@ -514,9 +506,8 @@ function App() {
   }, {});
 
   return (
-    <div className="dashboard" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <header style={{ flexShrink: 0 }}>
-        {/* RESTORED GRAPEFRUIT LOGO */}
+    <div className="dashboard" style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <header>
         <div className="brand" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
           <svg className="w-8 h-8 text-[#ff4b4b]" style={{width: '32px', height: '32px', color: '#ff4b4b'}} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <ellipse cx="50" cy="50" rx="48" ry="18" transform="rotate(-60 50 50)" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2"/>
@@ -528,15 +519,15 @@ function App() {
           <h1 style={{margin: 0, fontSize: '1.2rem'}}>Song<span style={{color: '#ff4b4b'}}>Engineer</span></h1>
         </div>
         
-        <div className="song-title-container" style={{ flex: '1 1 auto', minWidth: '150px', margin: '0 10px' }}>
-          <input type="text" className="song-title-input" value={songTitle} onChange={(e) => setSongTitle(e.target.value)} placeholder="Enter song title..." style={{width: '100%'}}/>
+        <div className="song-title-container">
+          <input type="text" className="song-title-input" value={songTitle} onChange={(e) => setSongTitle(e.target.value)} placeholder="Enter song title..." />
         </div>
         
-        <div className="recording-bar" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="recording-bar">
           <button className={`record-btn ${isRecording ? 'recording' : ''}`} onClick={toggleRecording} title="Record Voice Memo">🎙️</button>
           {audioData && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <audio className="custom-audio-player" src={audioData} controls style={{height: '30px', width: '120px'}}/>
+              <audio className="custom-audio-player" src={audioData} controls />
               <button onClick={deleteRecording} style={{ background: 'transparent', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
             </div>
           )}
@@ -550,13 +541,12 @@ function App() {
       </header>
 
       <div className="main-layout">
-        <div className="editor-container" style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
+        <div className="editor-container">
           
           <div className="syllable-gutter" ref={gutterRef}>
             {lines.map((line, i) => {
               const sylCount = getSyllables(line);
               const isStructural = line.trim().length > 0 && !line.startsWith('[');
-              
               return (
                 <div key={i} className="gutter-line">
                   <span className="gutter-syl">{isStructural ? (sylCount || 0) : ""}</span>
@@ -565,14 +555,20 @@ function App() {
             })}
           </div>
 
-          <div className="editor-wrapper">
-            <div className="editor-backdrop" ref={backdropRef}>{renderLyricsIDE()}</div>
+          <div 
+            className="editor-wrapper" 
+            ref={wrapperRef} 
+            onScroll={handleScroll}
+          >
+            <div className="editor-backdrop" ref={backdropRef}>
+              {renderLyricsIDE()}
+            </div>
+            
             <textarea
               className="editor-textarea"
-              ref={textAreaRef}
+              ref={editorRef}
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
-              onScroll={handleScroll}
               onSelect={handleSelection}
               onKeyUp={handleSelection}   
               onClick={handleEditorClick} 
@@ -591,21 +587,19 @@ function App() {
           )}
         </div>
 
-        {/* This Side Nav transforms into the Bottom Tab Bar on Mobile via CSS */}
-        <div className="side-nav" style={{ flexShrink: 0 }}>
+        <div className="side-nav">
           <button onClick={() => setActiveMenu(activeMenu === 'palette' ? null : 'palette')} className={activeMenu === 'palette' ? 'nav-btn active' : 'nav-btn'} title="Harmonic Palette">🎹</button>
           <button onClick={() => setActiveMenu(activeMenu === 'progressions' ? null : 'progressions')} className={activeMenu === 'progressions' ? 'nav-btn active' : 'nav-btn'} title="Chord Progressions">🎸</button>
           <button onClick={() => setActiveMenu(activeMenu === 'words' ? null : 'words')} className={activeMenu === 'words' ? 'nav-btn active' : 'nav-btn'} title="Word Finder">🔍</button>
           <button onClick={() => setActiveMenu(activeMenu === 'phrases' ? null : 'phrases')} className={activeMenu === 'phrases' ? 'nav-btn active' : 'nav-btn'} title="Metaphor Engine">💡</button>
           <button onClick={() => setActiveMenu(activeMenu === 'figures' ? null : 'figures')} className={activeMenu === 'figures' ? 'nav-btn active' : 'nav-btn'} title="Figures of Speech">🗣️</button>
           <button onClick={() => setActiveMenu(activeMenu === 'prompts' ? null : 'prompts')} className={activeMenu === 'prompts' ? 'nav-btn active' : 'nav-btn'} title="Song Prompts">📓</button>
-          <div className="nav-divider" style={{height: '20px', width: '1px', background: '#444', margin: '0 5px'}}></div>
+          <div className="nav-divider"></div>
           <button className="nav-btn" onClick={handleNewSong} title="New Song">➕</button>
           <button className="nav-btn" onClick={saveToLibrary} title="Save to Library">💾</button>
           <button onClick={() => setActiveMenu(activeMenu === 'library' ? null : 'library')} className={activeMenu === 'library' ? 'nav-btn active' : 'nav-btn'} title="Library">📚</button>
         </div>
 
-        {/* This Drawer transforms into a Bottom Sheet on Mobile via CSS */}
         <div className={`drawer ${activeMenu ? 'open' : ''}`}>
           <button className="close-btn" onClick={() => setActiveMenu(null)}>✕</button>
 
@@ -659,6 +653,7 @@ function App() {
                         <div 
                           key={i} 
                           className={`chord-tag ${suggestions[chordObj.name] ? 'suggested' : ''}`} 
+                          onMouseDown={(e) => e.preventDefault()} 
                           onClick={() => handleSidebarChordClick(chordObj.name)}
                           onMouseEnter={() => setHoverInfo(suggestions[chordObj.name] ? `${chordObj.roman} | ${suggestions[chordObj.name]}` : `${chordObj.roman} (Static)`)} 
                           onMouseLeave={() => setHoverInfo(null)}
