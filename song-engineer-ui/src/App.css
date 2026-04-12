@@ -520,18 +520,21 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 
   /* 3. THINNER BOTTOM TAB BAR */
   .side-nav {
-    order: 99; /* Pushes the menu entirely below the editor */
+    order: 99; 
     position: relative !important; 
     bottom: auto !important;
     top: auto !important;
     width: 100% !important;
-    height: 45px !important; /* Thinner bar (was 60px) */
+    height: 45px !important; 
     flex-direction: row !important;
     background: #0f172a !important;
-    border-top: 1px solid #1e293b !important; /* Border moved to the top */
+    border-top: 1px solid #1e293b !important; 
     border-bottom: none !important;
     flex-shrink: 0 !important; 
-    z-index: 10;
+    
+    /* THE FIX 1: Elevate the menu to act as a wall over the drawer */
+    z-index: 200 !important; 
+    
     overflow-x: auto;
     scrollbar-width: none;
     padding: 0 5px !important;
@@ -558,16 +561,19 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
   /* 5. DRAWER: Pops up right above the new bottom menu */
   .drawer {
     position: fixed;
-    bottom: 45px; /* Sits exactly on top of the thinner menu */
+    bottom: 45px; 
     left: 0;
     right: 0;
     top: auto;
     width: 100%;
     height: 60vh;
-    z-index: 100;
+    z-index: 100; /* Stays below the nav bar now */
     background: #1e1e1e;
-    transform: translateY(100%); /* Hides it off-screen */
+    
+    /* THE FIX 2: Push it down by its own height PLUS the 45px menu gap */
+    transform: translateY(calc(100% + 45px)); 
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
     border-radius: 20px 20px 0 0;
     border-top: 1px solid #333;
     border-left: none;
