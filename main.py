@@ -319,7 +319,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
             and item["word"].lower() not in UNPOETIC_ADJS
         ]
         for adj in valid_adjectives[:8]:
-            phrase = f"As {adj} as {query}"
+            phrase = f"As {query} as {adj}"
             if phrase.lower() not in seen:
                 seen.add(phrase.lower())
                 formatted_phrases.append({
