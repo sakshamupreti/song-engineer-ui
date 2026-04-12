@@ -486,14 +486,13 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
    MOBILE UI RESPONSIVE ARCHITECTURE
 ========================================= */
 
-/* 1. GLOBAL SCROLL LOCK: Kill all horizontal scrolling */
 @media (max-width: 768px) {
-  /* 1. STACK THE HEADER: Prevents horizontal squishing */
+  /* 1. THINNER HEADER & METRONOME */
   header {
     flex-direction: column !important;
     height: auto !important;
-    padding: 15px 10px !important;
-    gap: 12px !important;
+    padding: 8px 10px !important; /* Cut padding in half */
+    gap: 6px !important; /* Tighter stack */
   }
   
   .song-title-container {
@@ -501,52 +500,65 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     margin: 0 !important;
   }
 
-  .metronome-bar {
+  /* Make the metronome bar thinner and fit the screen */
+  .metronome-bar, .recording-bar {
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
+    padding: 4px 10px !important; /* Thinner pill shape */
+    gap: 8px !important;
+    box-sizing: border-box !important;
   }
 
-  /* 2. MAIN LAYOUT: Vertical stack for Menu + Editor */
+  /* 2. MAIN LAYOUT: Vertical stack */
   .main-layout {
     display: flex !important;
     flex-direction: column !important;
-    height: calc(100dvh - 120px) !important; 
+    height: calc(100dvh - 80px) !important; /* Adjusted for the new thinner header */
     overflow: hidden !important;
   }
 
-  /* 3. PERMANENT MENU: Acts as a fixed bar under the header */
+  /* 3. THINNER BOTTOM TAB BAR */
   .side-nav {
-    order: -1; 
+    order: 99; /* Pushes the menu entirely below the editor */
     position: relative !important; 
     bottom: auto !important;
     top: auto !important;
     width: 100% !important;
-    height: 60px !important;
+    height: 45px !important; /* Thinner bar (was 60px) */
     flex-direction: row !important;
     background: #0f172a !important;
-    border-bottom: 1px solid #1e293b;
-    border-top: none !important;
+    border-top: 1px solid #1e293b !important; /* Border moved to the top */
+    border-bottom: none !important;
     flex-shrink: 0 !important; 
     z-index: 10;
     overflow-x: auto;
     scrollbar-width: none;
+    padding: 0 5px !important;
+    align-items: center !important;
   }
 
-  /* 4. EDITOR CONTAINER: Keep gutter and text side-by-side */
+  /* Shrink the buttons slightly so they fit in the thinner bar */
+  .nav-btn {
+    height: 35px !important; 
+    width: 35px !important;
+    font-size: 1rem !important;
+  }
+
+  /* 4. EDITOR CONTAINER */
   .editor-container {
     flex: 1 !important;
     display: flex !important;
-    flex-direction: row !important; /* Gutter left, Editor right */
+    flex-direction: row !important; 
     position: relative !important;
     padding-bottom: 0 !important;
     overflow: hidden !important;
   }
 
-  /* 5. DRAWER: Bottom sheet */
+  /* 5. DRAWER: Pops up right above the new bottom menu */
   .drawer {
     position: fixed;
-    bottom: 0;
+    bottom: 45px; /* Sits exactly on top of the thinner menu */
     left: 0;
     right: 0;
     top: auto;
@@ -554,18 +566,13 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     height: 60vh;
     z-index: 100;
     background: #1e1e1e;
-    
-    /* THE FIX: Push it off the bottom of the screen */
-    transform: translateY(100%);
+    transform: translateY(100%); /* Hides it off-screen */
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
-    /* Polish: Give it rounded corners like a native iOS bottom sheet */
     border-radius: 20px 20px 0 0;
     border-top: 1px solid #333;
-    border-left: none; /* Remove desktop border */
+    border-left: none;
   }
 
-  /* When you click a menu button, React adds this class to slide it up */
   .drawer.open {
     transform: translateY(0);
   }
