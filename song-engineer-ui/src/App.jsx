@@ -84,6 +84,7 @@ function App() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const textAreaRef = useRef(null);
+  const editorRef = useRef(null);
   const backdropRef = useRef(null);
   const gutterRef = useRef(null);
   const metronomeInterval = useRef(null);
@@ -459,18 +460,22 @@ function App() {
   }, [searchWord, activeWordTool, rhymeType, syllableFilter, songTopic]);
 
   const handleScroll = (e) => {
+
+    if (!editorRef.current) return;
+
     // Grab both the vertical (Y) and horizontal (X) scroll positions
-    const { scrollTop, scrollLeft } = e.target;
+    const currentScrollTop = editorRef.current.scrollTop;
+    const currentScrollLeft = editorRef.current.scrollLeft;
     
     // Sync the colors (Backdrop) both up/down and left/right
     if (backdropRef.current) {
-      backdropRef.current.scrollTop = scrollTop;
-      backdropRef.current.scrollLeft = scrollLeft; 
+      backdropRef.current.scrollTop = currentScrollTop;
+      backdropRef.current.scrollLeft = currentScrollLeft;
     }
     
     // Sync the numbers (Gutter) only up/down
     if (gutterRef.current) {
-      gutterRef.current.scrollTop = scrollTop;
+      gutterRef.current.scrollTop = currentScrollTop;
     }
   };
 
@@ -564,7 +569,7 @@ function App() {
             <div className="editor-backdrop" ref={backdropRef}>{renderLyricsIDE()}</div>
             <textarea
               className="editor-textarea"
-              ref={textAreaRef}
+              ref={editorRef}
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
               onScroll={handleScroll}
