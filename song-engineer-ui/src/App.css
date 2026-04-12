@@ -1,0 +1,487 @@
+:root {
+  --primary: #FF4B4B;
+  --bg-dark: #121212;
+  --bg-card: #1e1e1e;
+  --text-main: #e0e0e0;
+  --accent-blue: #0096ff;
+  --bg-input: #2a2a2a;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  overflow: hidden;
+}
+
+/* --- HEADER --- */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 25px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  height: 60px;
+}
+
+.brand h1 { font-size: 0.9rem; font-weight: 800; letter-spacing: 2px; color: #666; text-transform: uppercase; }
+
+.song-title-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  margin: 0 40px;
+}
+
+.song-title-input {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid #333 !important;
+  border-radius: 0 !important;
+  color: var(--primary) !important;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+  transition: border-color 0.3s;
+}
+
+.song-title-input:focus {
+  border-bottom-color: var(--primary) !important;
+  outline: none;
+}
+
+.metronome-bar {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: #2a2a2a;
+  padding: 6px 18px;
+  border-radius: 30px;
+  border: 1px solid #444;
+}
+
+.metronome-bar button {
+  background: var(--primary);
+  border: none;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+/* --- EDITOR & GUTTER --- */
+.main-layout { display: flex; position: relative; height: calc(100vh - 60px); }
+
+.editor-container {
+  flex: 1;
+  display: flex;
+  position: relative;
+  background: #161616;
+  overflow: hidden; 
+}
+
+/* --- SYLLABLE GUTTER FIX --- */
+.syllable-gutter {
+  /* 1. The top/bottom padding MUST exactly match the editor's 15px */
+  padding: 15px 10px; 
+  
+  /* 2. Typography MUST exactly match the editor */
+  font-family: 'Courier New', Courier, monospace; 
+  font-size: 1.1rem;
+  line-height: 1.6;
+  
+  text-align: right;
+  color: #666;
+  background: #111;
+  border-right: 1px solid #333;
+  overflow-y: hidden; /* Scroll is controlled by the textarea */
+  user-select: none;
+}
+
+.gutter-line {
+  /* Forces empty lines to still take up exactly one line of vertical space */
+  min-height: calc(1.1rem * 1.6); 
+}
+
+textarea {
+  flex: 1;
+  background: transparent;
+  color: white;
+  border: none;
+  outline: none;
+  resize: none;
+  padding-top: 40px; 
+  padding-left: 30px;
+  padding-right: 50px;
+  line-height: 32px; 
+  font-size: 1.25rem; 
+  font-family: 'Georgia', serif;
+  white-space: pre; 
+  overflow-y: auto;
+}
+
+/* --- DRAWER SYSTEM --- */
+.drawer { 
+  position: fixed; right: -380px; top: 60px; width: 320px; height: calc(100vh - 60px); 
+  background: #1e1e1e; border-left: 1px solid #333; padding: 20px; 
+  transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1); z-index: 90; 
+  overflow-y: auto; overflow-x: hidden; box-sizing: border-box;
+}
+.drawer.open { right: 60px; }
+.drawer-content { display: flex; flex-direction: column; padding-bottom: 80px; }
+.close-btn { background: transparent; border: none; color: #666; cursor: pointer; margin-bottom: 20px; text-align: left; font-size: 0.85rem;}
+
+/* --- SIDE NAV --- */
+.side-nav { position: fixed; right: 0; top: 70px; width: 60px; display: flex; flex-direction: column; gap: 12px; padding: 10px; z-index: 100; }
+.nav-btn { width: 42px; height: 42px; background: #2a2a2a; border: 1px solid #444; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; color: white; transition: 0.2s; }
+.nav-btn:hover { background: #333; }
+.nav-btn.active { background: var(--primary); border-color: var(--primary);}
+.nav-divider { height: 1px; width: 30px; background: #444; margin: 4px auto; }
+
+/* --- UI ELEMENTS --- */
+.palette-settings-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+.setting-item { flex: 1; }
+.setting-item label { display: block; font-size: 0.55rem; color: #444; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-weight: 700; }
+
+.mode-toggle-group { display: flex; background: rgba(255, 255, 255, 0.02); padding: 2px; border-radius: 6px; border: 1px solid #2a2a2a; height: 32px; box-sizing: border-box; }
+.mode-btn { flex: 1; background: transparent; border: none; color: #444; padding: 0 10px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; cursor: pointer; transition: 0.2s; }
+.mode-btn.active { color: #ff8a8a; background: rgba(255, 75, 75, 0.05); }
+
+.drone-module { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); padding: 16px; border-radius: 12px; cursor: pointer; margin-bottom: 24px; text-align: center;}
+.drone-module.active { border-color: var(--accent-blue); background: rgba(0, 150, 255, 0.05); }
+.drone-status { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.8rem; font-weight: bold; color: #aaa; margin-bottom: 4px; }
+.drone-info { font-size: 0.65rem; color: #666; text-transform: uppercase;}
+.pulse-dot { width: 6px; height: 6px; background: #333; border-radius: 50%; }
+.drone-module.active .pulse-dot { background: var(--accent-blue); animation: drone-pulse 2s infinite; }
+@keyframes drone-pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+
+/* Theory Tracker Aesthetic */
+.theory-tracker { border-top: 1px dashed #333; border-bottom: 1px dashed #333; padding: 15px 5px; margin-bottom: 25px; position: relative; }
+.theory-label { position: absolute; top: -8px; left: 10px; background: #1e1e1e; padding: 0 8px; font-size: 0.55rem; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+.theory-value { font-size: 0.85rem; color: var(--accent-blue); font-weight: 700; margin-top: 5px; padding-left: 10px; }
+
+.palette-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.chord-tag { background: #2a2a2a; border: 1px solid #333; padding: 8px; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.2s;}
+.chord-tag:hover { border-color: #555; }
+.chord-tag.suggested { border-color: rgba(255, 75, 75, 0.3); background: rgba(255, 75, 75, 0.04); }
+.tag-roman { display: block; font-size: 0.6rem; color: #666; }
+.tag-name { font-weight: 700; font-size: 0.9rem; color: #fff;}
+.chord-tag.suggested .tag-name { color: #ff8a8a; }
+
+/* Word Library & Rhyme UI */
+.tool-tabs { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid #333; }
+.tab-btn { background: transparent; border: none; color: #444; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; cursor: pointer; padding: 5px 0; }
+.tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+
+.search-command-bar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.search-command-bar input { width: 100%; background: #2a2a2a; border: 1px solid #333; color: white; padding: 10px; border-radius: 6px; outline: none; box-sizing: border-box; }
+
+.rhyme-type-strip { display: flex; gap: 4px; background: rgba(0, 0, 0, 0.2); padding: 2px; border-radius: 6px; }
+.mini-type-btn { flex: 1; background: transparent; border: none; color: #444; font-size: 0.6rem; padding: 6px 0; cursor: pointer; border-radius: 4px; font-weight: 700; transition: 0.2s; text-transform: uppercase;}
+.mini-type-btn.active { background: #2a2a2a; color: var(--primary); }
+
+.word-cloud-container { border-top: 1px solid rgba(255, 255, 255, 0.03); padding-top: 15px; }
+.word-results-list { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+
+.word-tag-refined { display: inline-block; padding: 4px 12px; margin: 3px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 100px; color: #ccc; cursor: cell; transition: all 0.2s; white-space: nowrap; font-size: 0.8rem;}
+.word-tag-refined:hover { background: rgba(255, 75, 75, 0.08); border-color: rgba(255, 75, 75, 0.3); color: #ff8a8a; transform: scale(1.05); }
+
+.sense-group { margin-bottom: 20px; border-top: 1px solid rgba(255, 255, 255, 0.03); padding-top: 12px; }
+.sense-label-minimal { font-size: 0.55rem; font-weight: 800; text-transform: uppercase; color: var(--accent-blue); letter-spacing: 1.5px; margin-bottom: 8px; display: block; }
+
+/* --- Phrase & Prompt Cards --- */
+.phrase-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); padding: 12px 15px; border-radius: 8px; cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
+.phrase-card:hover { border-color: var(--primary); background: rgba(255, 75, 75, 0.05); }
+.phrase-text { display: block; font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.phrase-meaning { display: block; font-size: 0.65rem; color: #888; line-height: 1.4; }
+
+/* --- Library Cards --- */
+.drum-preset-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); padding: 15px; border-radius: 12px; margin-bottom: 12px; transition: all 0.2s; }
+.drum-preset-card:hover { border-color: var(--accent-blue); background: rgba(0, 150, 255, 0.05); }
+.preset-name { display: block; font-size: 0.85rem; font-weight: 700; color: #fff; }
+.preset-type { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: #555; }
+.song-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+
+input[type="text"], input[type="number"], select { background: #2a2a2a; border: 1px solid #444; color: white; padding: 8px; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 0.85rem; outline: none;}
+
+/* --- VOICE MEMO & RECORDING --- */
+.recording-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1e1e1e;
+  padding: 5px 15px;
+  border-radius: 20px;
+}
+
+.record-btn {
+  background: transparent;
+  border: 1px solid #444;
+  color: white;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.record-btn.recording {
+  background: #ff3b30;
+  border-color: #ff3b30;
+  animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+}
+
+.custom-audio-player {
+  height: 30px;
+  width: 200px;
+  border-radius: 15px;
+}
+
+/* --- PROGRESSION MENU --- */
+.progression-controls {
+  background: #111;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.style-selector {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.style-btn {
+  flex: 1;
+  background: #222;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.style-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.progression-card {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prog-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.prog-name { font-weight: bold; font-size: 0.95rem; }
+.prog-chords { font-size: 0.8rem; color: #888; font-family: monospace; margin-top: 4px; }
+
+.prog-actions button {
+  background: #333;
+  border: none;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.prog-actions button:hover { background: #555; }
+.prog-actions .play-btn { background: #22c55e; }
+.prog-actions .play-btn:hover { background: #16a34a; }
+
+/* --- SYNTAX HIGHLIGHTING IDE --- */
+.editor-wrapper {
+  position: relative;
+  flex: 1;
+  background: transparent;
+  display: block; /* Changed from flex to block to stabilize absolute children */
+}
+
+.editor-backdrop, .editor-textarea {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  margin: 0;
+  padding: 15px;
+  
+  /* CRITICAL FIXES FOR PERFECT OVERLAP: */
+  text-align: left !important;  /* Forces both layers to the left edge */
+  box-sizing: border-box;       /* Ensures padding doesn't shift the width */
+  font-family: 'Courier New', Courier, monospace; /* Hardcode font to prevent browser mismatch */
+  font-size: 1.1rem;
+  line-height: 1.6;
+  letter-spacing: normal;
+  
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border: none;
+  border-radius: 8px;
+  overflow-y: auto;
+}
+
+.editor-backdrop {
+  color: #e0e0e0;
+  pointer-events: none; /* Let clicks pass through to textarea */
+  z-index: 1;
+}
+
+.editor-textarea {
+  color: transparent !important; /* Hide raw text, but keep caret visible */
+  background: transparent;
+  caret-color: white; /* Make sure the cursor stays visible */
+  z-index: 2;
+  outline: none;
+  resize: none;
+}
+
+/* IDE Syntax Styles */
+.chord-highlight {
+  color: #3b82f6;
+  font-weight: bold;
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.section-highlight {
+  color: #a855f7;
+  font-weight: bold;
+  background: rgba(168, 85, 247, 0.15);
+  padding: 2px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+.cliche-highlight {
+  text-decoration: underline wavy #eab308;
+  cursor: help;
+}
+
+/* --- MAGIC HIGHLIGHT BAR --- */
+.magic-tooltip {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  border: 1px solid #444;
+  padding: 8px 15px;
+  border-radius: 30px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  z-index: 10;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  animation: slideUp 0.2s ease-out;
+}
+
+.magic-tooltip span { color: #888; font-size: 0.85rem; margin-right: 5px; }
+
+.magic-btn {
+  background: #333;
+  border: none;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.magic-btn:hover { background: #3b82f6; }
+
+/* --- SYLLABLE METER UPGRADES --- */
+.meter-config {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1e1e1e;
+  padding: 5px 15px;
+  border-radius: 20px;
+  margin-right: auto;
+  margin-left: 20px;
+}
+
+.meter-config input {
+  background: #111;
+  border: 1px solid #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  width: 120px;
+  font-family: monospace;
+}
+
+.meter-perfect { color: #22c55e !important; font-weight: bold; }
+.meter-off { color: #ef4444 !important; }
+
+/* --- PROSODY & STABILITY HIGHLIGHTS --- */
+.gutter-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: calc(1.1rem * 1.6);
+  padding-left: 5px;
+  padding-right: 5px;
+  border-left: 3px solid transparent; /* default */
+  margin-left: -10px; /* Pull into the gutter padding */
+  transition: 0.2s border-color;
+}
+
+.stable-stanza {
+  border-left-color: #22c55e; /* Green for resolution */
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.05) 0%, transparent 100%);
+}
+
+.unstable-stanza {
+  border-left-color: #eab308; /* Yellow for tension */
+  background: linear-gradient(90deg, rgba(234, 179, 8, 0.05) 0%, transparent 100%);
+}
+
+.gutter-syl {
+  color: #666;
+  font-weight: bold;
+}
+
+.gutter-target {
+  color: #3b82f6;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+}
+
+.word-stress {
+  color: #eab308;
+  font-size: 0.75rem;
+  margin-left: 6px;
+  letter-spacing: 1px;
+  opacity: 0.8;
+}
