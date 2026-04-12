@@ -553,5 +553,20 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     width: 100%;
     height: 60vh;
     z-index: 100;
+    background: #1e1e1e;
+    
+    /* THE FIX: Push it off the bottom of the screen */
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Polish: Give it rounded corners like a native iOS bottom sheet */
+    border-radius: 20px 20px 0 0;
+    border-top: 1px solid #333;
+    border-left: none; /* Remove desktop border */
+  }
+
+  /* When you click a menu button, React adds this class to slide it up */
+  .drawer.open {
+    transform: translateY(0);
   }
 }
