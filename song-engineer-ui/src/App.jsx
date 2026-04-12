@@ -459,10 +459,11 @@ function App() {
 
   // --- THE NEW SCROLL SYNC ENGINE ---
   const handleScroll = () => {
-    if (!wrapperRef.current) return;
+    // Listen to the textarea again!
+    if (!editorRef.current) return;
 
-    const currentScrollTop = wrapperRef.current.scrollTop;
-    const currentScrollLeft = wrapperRef.current.scrollLeft;
+    const currentScrollTop = editorRef.current.scrollTop;
+    const currentScrollLeft = editorRef.current.scrollLeft;
     
     if (backdropRef.current) {
       backdropRef.current.scrollTop = currentScrollTop;
@@ -555,11 +556,8 @@ function App() {
             })}
           </div>
 
-          <div 
-            className="editor-wrapper" 
-            ref={wrapperRef} 
-            onScroll={handleScroll}
-          >
+          <div className="editor-wrapper" ref={wrapperRef}>
+            
             <div className="editor-backdrop" ref={backdropRef}>
               {renderLyricsIDE()}
             </div>
@@ -567,6 +565,7 @@ function App() {
             <textarea
               className="editor-textarea"
               ref={editorRef}
+              onScroll={handleScroll} /* <--- MOVED BACK HERE */
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
               onSelect={handleSelection}
