@@ -485,3 +485,82 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
   letter-spacing: 1px;
   opacity: 0.8;
 }
+
+/* =========================================
+   MOBILE UI RESPONSIVE ARCHITECTURE
+========================================= */
+@media (max-width: 768px) {
+  /* 1. Stack the header elements so they don't squash */
+  header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px;
+  }
+  
+  .recording-bar {
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .song-title-container {
+    width: 100%;
+  }
+
+  /* 2. Switch main layout from Row to Column */
+  .main-layout {
+    flex-direction: column;
+    height: calc(100vh - 120px); /* Leave room for header and bottom nav */
+  }
+
+  /* 3. Transform Side Nav into an iOS Bottom Tab Bar */
+  .side-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 65px;
+    flex-direction: row;
+    overflow-x: auto;
+    background: #0f172a; /* Slate 950 */
+    border-top: 1px solid #1e293b;
+    z-index: 100;
+    padding: 0 10px;
+    align-items: center;
+    /* Hide the scrollbar for a cleaner look */
+    scrollbar-width: none; 
+  }
+  .side-nav::-webkit-scrollbar { display: none; }
+
+  /* 4. Pad the editor so the bottom bar doesn't cover lyrics */
+  .editor-container {
+    padding-bottom: 70px;
+    height: 100%;
+  }
+
+  /* 5. Transform the Drawer into a Bottom Sheet */
+  .drawer {
+    position: fixed;
+    bottom: 65px; /* Sit right above the new bottom nav */
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    height: 60vh;
+    border-left: none;
+    border-top: 1px solid #333;
+    border-radius: 20px 20px 0 0; /* Rounded top corners */
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .drawer.open {
+    transform: translateY(0);
+  }
+
+  /* Hide the text label on close button to save space */
+  .close-btn {
+    font-size: 1.5rem;
+  }
+}

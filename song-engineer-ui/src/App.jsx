@@ -467,25 +467,38 @@ function App() {
 
   return (
     <div className="dashboard">
-      <header>
-        <div className="brand" style={{display: 'flex', alignItems: 'center'}}>
-          <h1>🎵 SongEngineer</h1>
+      <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        
+        {/* RESTORED GRAPEFRUIT LOGO */}
+        <div className="brand" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+          <svg className="w-8 h-8 text-[#ff4b4b]" style={{width: '32px', height: '32px', color: '#ff4b4b'}} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="50" rx="48" ry="18" transform="rotate(-60 50 50)" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2"/>
+            <ellipse cx="50" cy="50" rx="48" ry="18" transform="rotate(60 50 50)" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2"/>
+            <ellipse cx="50" cy="50" rx="48" ry="18" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2"/>
+            <circle cx="50" cy="50" r="4" fill="currentColor"/>
+            <path d="M20,60 L35,30 L50,70 L65,40 L80,55" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" style={{filter: 'drop-shadow(0px 2px 4px rgba(255,75,75,0.4))'}}/>
+          </svg>
+          <h1 style={{margin: 0, fontSize: '1.2rem'}}>Song<span style={{color: '#ff4b4b'}}>Engineer</span></h1>
         </div>
         
-        <div className="song-title-container"><input type="text" className="song-title-input" value={songTitle} onChange={(e) => setSongTitle(e.target.value)} placeholder="Enter song title..." /></div>
+        <div className="song-title-container" style={{ flex: '1 1 auto', minWidth: '150px', margin: '0 10px' }}>
+          <input type="text" className="song-title-input" value={songTitle} onChange={(e) => setSongTitle(e.target.value)} placeholder="Enter song title..." style={{width: '100%'}}/>
+        </div>
         
-        <div className="recording-bar">
+        <div className="recording-bar" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button className={`record-btn ${isRecording ? 'recording' : ''}`} onClick={toggleRecording} title="Record Voice Memo">🎙️</button>
           {audioData && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <audio className="custom-audio-player" src={audioData} controls />
+              <audio className="custom-audio-player" src={audioData} controls style={{height: '30px', width: '120px'}}/>
               <button onClick={deleteRecording} style={{ background: 'transparent', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
             </div>
           )}
-          <div style={{ borderLeft: '1px solid #444', height: '20px', margin: '0 10px' }}></div>
-          <button onClick={() => setIsMetronomePlaying(!isMetronomePlaying)}>{isMetronomePlaying ? "⏹ STOP" : "▶ METRONOME"}</button>
-          <input type="range" min="40" max="220" value={bpm} onChange={(e) => setBpm(e.target.value)} />
-          <span>{bpm} BPM</span>
+          <div style={{ borderLeft: '1px solid #444', height: '20px' }}></div>
+          <button onClick={() => setIsMetronomePlaying(!isMetronomePlaying)} style={{background: isMetronomePlaying ? '#ff4b4b' : '#333', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer'}}>
+            {isMetronomePlaying ? "⏹" : "▶ MET"}
+          </button>
+          <input type="range" min="40" max="220" value={bpm} onChange={(e) => setBpm(e.target.value)} style={{width: '60px'}}/>
+          <span style={{fontSize: '0.8rem', color: '#aaa'}}>{bpm}</span>
         </div>
       </header>
 
@@ -531,6 +544,7 @@ function App() {
           )}
         </div>
 
+        {/* This Side Nav transforms into the Bottom Tab Bar on Mobile via CSS */}
         <div className="side-nav">
           <button onClick={() => setActiveMenu(activeMenu === 'palette' ? null : 'palette')} className={activeMenu === 'palette' ? 'nav-btn active' : 'nav-btn'} title="Harmonic Palette">🎹</button>
           <button onClick={() => setActiveMenu(activeMenu === 'progressions' ? null : 'progressions')} className={activeMenu === 'progressions' ? 'nav-btn active' : 'nav-btn'} title="Chord Progressions">🎸</button>
@@ -538,14 +552,15 @@ function App() {
           <button onClick={() => setActiveMenu(activeMenu === 'phrases' ? null : 'phrases')} className={activeMenu === 'phrases' ? 'nav-btn active' : 'nav-btn'} title="Metaphor Engine">💡</button>
           <button onClick={() => setActiveMenu(activeMenu === 'figures' ? null : 'figures')} className={activeMenu === 'figures' ? 'nav-btn active' : 'nav-btn'} title="Figures of Speech">🗣️</button>
           <button onClick={() => setActiveMenu(activeMenu === 'prompts' ? null : 'prompts')} className={activeMenu === 'prompts' ? 'nav-btn active' : 'nav-btn'} title="Song Prompts">📓</button>
-          <div className="nav-divider"></div>
+          <div className="nav-divider" style={{height: '20px', width: '1px', background: '#444', margin: '0 5px'}}></div>
           <button className="nav-btn" onClick={handleNewSong} title="New Song">➕</button>
           <button className="nav-btn" onClick={saveToLibrary} title="Save to Library">💾</button>
           <button onClick={() => setActiveMenu(activeMenu === 'library' ? null : 'library')} className={activeMenu === 'library' ? 'nav-btn active' : 'nav-btn'} title="Library">📚</button>
         </div>
 
+        {/* This Drawer transforms into a Bottom Sheet on Mobile via CSS */}
         <div className={`drawer ${activeMenu ? 'open' : ''}`}>
-          <button className="close-btn" onClick={() => setActiveMenu(null)}>✕ Close</button>
+          <button className="close-btn" onClick={() => setActiveMenu(null)}>✕</button>
 
           {activeMenu === 'palette' && (
             <div className="drawer-content">
@@ -620,7 +635,7 @@ function App() {
                 <div className="style-selector">
                   <button className={`style-btn ${playbackStyle === 'block' ? 'active' : ''}`} onClick={() => setPlaybackStyle('block')}>Block</button>
                   <button className={`style-btn ${playbackStyle === 'strum' ? 'active' : ''}`} onClick={() => setPlaybackStyle('strum')}>Strum</button>
-                  <button className={`style-btn ${playbackStyle === 'fingerstyle' ? 'active' : ''}`} onClick={() => setPlaybackStyle('fingerstyle')}>Fingerstyle</button>
+                  <button className={`style-btn ${playbackStyle === 'fingerstyle' ? 'active' : ''}`} onClick={() => setPlaybackStyle('fingerstyle')}>Finger</button>
                 </div>
               </div>
               <div className="song-list">
@@ -650,33 +665,19 @@ function App() {
           {activeMenu === 'words' && (
             <div className="drawer-content">
               <h3>Word Finder</h3>
-              <div className="tool-tabs">
+              <div className="tool-tabs" style={{flexWrap: 'wrap', gap: '5px'}}>
                 {["Rhymes", "Concept", "Imagery", "Family"].map(tool => (
                   <button key={tool} className={activeWordTool === tool ? "tab-btn active" : "tab-btn"} onClick={() => setActiveWordTool(tool)}>{tool}</button>
                 ))}
               </div>
               <div className="search-command-bar">
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                  <input 
-                    type="text" 
-                    value={songTopic} 
-                    onChange={(e) => setSongTopic(e.target.value)} 
-                    placeholder="Theme (e.g. ocean)..." 
-                    style={{ borderBottom: '2px solid #3b82f6', backgroundColor: '#1a1a1a', flex: 1 }}
-                  />
-                  <input 
-                    type="text" 
-                    value={wordMeter} 
-                    onChange={(e) => setWordMeter(e.target.value)} 
-                    placeholder="Meter (e.g. da DUM)" 
-                    style={{ borderBottom: '2px solid #a855f7', backgroundColor: '#1a1a1a', flex: 1 }}
-                    title="Filter words by rhythmic stress pattern"
-                  />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                  <input type="text" value={songTopic} onChange={(e) => setSongTopic(e.target.value)} placeholder="Theme (e.g. ocean)..." style={{ borderBottom: '2px solid #3b82f6', backgroundColor: '#1a1a1a', flex: '1 1 100px' }}/>
+                  <input type="text" value={wordMeter} onChange={(e) => setWordMeter(e.target.value)} placeholder="Meter (e.g. da DUM)" style={{ borderBottom: '2px solid #a855f7', backgroundColor: '#1a1a1a', flex: '1 1 100px' }}/>
                 </div>
-                
                 <input type="text" value={searchWord} onChange={(e) => setSearchWord(e.target.value)} placeholder={`Search ${activeWordTool}...`} />
                 {activeWordTool === "Rhymes" && (
-                  <div className="rhyme-type-strip">
+                  <div className="rhyme-type-strip" style={{flexWrap: 'wrap'}}>
                     {["Perfect", "Near", "Slant", "Consonant"].map(r => (
                       <button key={r} className={rhymeType === r ? "mini-type-btn active" : "mini-type-btn"} onClick={() => setRhymeType(r)}>{r}</button>
                     ))}
@@ -704,20 +705,18 @@ function App() {
 
           {activeMenu === 'phrases' && (
             <div className="drawer-content">
-              <h3>Phrase & Metaphor Library</h3>
+              <h3>Phrase & Metaphor</h3>
               <div className="tool-tabs">
                 {["Idioms", "Metaphors", "Similes"].map(tab => (
                   <button key={tab} className={activePhraseTab === tab ? "tab-btn active" : "tab-btn"} onClick={() => setActivePhraseTab(tab)}>{tab}</button>
                 ))}
               </div>
               <div className="search-command-bar">
-                <input type="text" value={phraseSearch} onChange={(e) => setPhraseSearch(e.target.value)} placeholder={`Search concept (e.g. fire, time)...`} />
+                <input type="text" value={phraseSearch} onChange={(e) => setPhraseSearch(e.target.value)} placeholder={`Search concept...`} />
               </div>
               <div className="song-list" style={{marginTop: '10px'}}>
                 {phrases.length === 0 ? (
-                  <div className="placeholder-text" style={{ textAlign: 'center', opacity: 0.3, padding: '20px' }}>
-                    {phraseSearch.length === 0 ? "Type a concept to find phrases." : "No phrases found."}
-                  </div>
+                  <div className="placeholder-text" style={{ textAlign: 'center', opacity: 0.3, padding: '20px' }}>No phrases found.</div>
                 ) : (
                   phrases.map((item, i) => (
                     <div key={i} className="phrase-card" onClick={() => insertAtCursor(item.text)}>
@@ -733,14 +732,11 @@ function App() {
           {activeMenu === 'figures' && (
             <div className="drawer-content">
               <h3>Figures of Speech</h3>
-              <p style={{fontSize: '0.85rem', color: '#888', marginBottom: '15px'}}>Learn how to craft stronger lyrics using classic literary devices.</p>
               <div className="song-list">
                 {FIGURES_OF_SPEECH.map((fig, i) => (
                   <div key={i} className="phrase-card" onClick={() => insertAtCursor(`\n[Try using ${fig.name} here]\n`)}>
                     <span className="phrase-text" style={{color: '#3b82f6'}}>{fig.name}</span>
                     <span className="phrase-meaning" style={{marginBottom: '8px'}}>{fig.desc}</span>
-                    <div style={{fontSize: '0.8rem', color: '#aaa', fontStyle: 'italic', marginBottom: '4px'}}><strong>Ex:</strong> {fig.examples.join(' | ')}</div>
-                    <div style={{fontSize: '0.8rem', color: '#ccc'}}><strong>Usage:</strong> {fig.usage}</div>
                   </div>
                 ))}
               </div>
@@ -770,27 +766,21 @@ function App() {
             <div className="drawer-content">
               <h3>My Song Library</h3>
               <div className="song-list">
-                {JSON.parse(localStorage.getItem('songEngineer_library') || "[]").length === 0 ? (
-                  <div className="placeholder-text" style={{ textAlign: 'center', opacity: 0.3, padding: '20px' }}>No saved songs yet.</div>
-                ) : (
-                  JSON.parse(localStorage.getItem('songEngineer_library') || "[]").map((song) => (
-                    <div key={song.id} className="drum-preset-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div onClick={() => {
-                          setLyrics(song.content); setSongTitle(song.title);
-                          setAudioData(song.audioData || null); 
-                          setActiveSongId(song.id); setPlayingProgIndex(null); setActiveMenu(null);
-                        }} style={{ cursor: 'pointer', flex: 1 }}>
-                        <span className="preset-name">{song.title} {song.audioData ? "🎙️" : ""}</span>
-                        <span className="preset-type">{song.date}</span>
-                      </div>
-                      <button onClick={() => {
-                          const lib = JSON.parse(localStorage.getItem('songEngineer_library') || "[]");
-                          localStorage.setItem('songEngineer_library', JSON.stringify(lib.filter(s => s.id !== song.id)));
-                          if (activeSongId === song.id) handleNewSong(); else setActiveMenu('library');
-                        }} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', padding: '10px' }}>✕</button>
+                {JSON.parse(localStorage.getItem('songEngineer_library') || "[]").map((song) => (
+                  <div key={song.id} className="drum-preset-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div onClick={() => {
+                        setLyrics(song.content); setSongTitle(song.title);
+                        setAudioData(song.audioData || null); setActiveSongId(song.id); setActiveMenu(null);
+                      }} style={{ cursor: 'pointer', flex: 1 }}>
+                      <span className="preset-name">{song.title}</span>
                     </div>
-                  ))
-                )}
+                    <button onClick={() => {
+                        const lib = JSON.parse(localStorage.getItem('songEngineer_library') || "[]");
+                        localStorage.setItem('songEngineer_library', JSON.stringify(lib.filter(s => s.id !== song.id)));
+                        if (activeSongId === song.id) handleNewSong(); else setActiveMenu('library');
+                      }} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', padding: '10px' }}>✕</button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
