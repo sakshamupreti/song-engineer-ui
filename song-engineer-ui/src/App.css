@@ -102,6 +102,7 @@ header {
   border-right: 1px solid #1e293b;
   width: 40px !important;
   flex-shrink: 0;
+  text-align: center !important;
 }
 
 .gutter-line {
