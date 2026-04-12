@@ -488,55 +488,62 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 
 /* 1. GLOBAL SCROLL LOCK: Kill all horizontal scrolling */
 @media (max-width: 768px) {
-  /* 1. Reset layout to a vertical stack between header and glass */
+  /* 1. STACK THE HEADER: Prevents horizontal squishing */
+  header {
+    flex-direction: column !important;
+    height: auto !important;
+    padding: 15px 10px !important;
+    gap: 12px !important;
+  }
+  
+  .song-title-container {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .metronome-bar {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* 2. MAIN LAYOUT: Vertical stack for Menu + Editor */
   .main-layout {
     display: flex !important;
     flex-direction: column !important;
-    height: calc(100dvh - 120px) !important; /* Use dvh for mobile browser bars */
+    height: calc(100dvh - 120px) !important; 
     overflow: hidden !important;
   }
 
-  /* 2. PERMANENT MENU UNDER HEADER: No more floating/covering */
+  /* 3. PERMANENT MENU: Acts as a fixed bar under the header */
   .side-nav {
-    order: -1; /* Pushes nav to the top of the stack (under header) */
+    order: -1; 
     position: relative !important; 
     bottom: auto !important;
+    top: auto !important;
     width: 100% !important;
     height: 60px !important;
     flex-direction: row !important;
     background: #0f172a !important;
     border-bottom: 1px solid #1e293b;
     border-top: none !important;
-    flex-shrink: 0 !important; /* Prevents menu from squashing */
+    flex-shrink: 0 !important; 
     z-index: 10;
     overflow-x: auto;
     scrollbar-width: none;
   }
 
-  /* 3. EDITOR: Takes up exactly what is left */
+  /* 4. EDITOR CONTAINER: Keep gutter and text side-by-side */
   .editor-container {
     flex: 1 !important;
+    display: flex !important;
+    flex-direction: row !important; /* Gutter left, Editor right */
     position: relative !important;
     padding-bottom: 0 !important;
     overflow: hidden !important;
   }
 
-  /* 4. CURSOR & TEXT ALIGNMENT: Pixel-perfect matching */
-  .editor-textarea,
-  .editor-backdrop {
-    font-family: 'Inter', -apple-system, system-ui, sans-serif !important;
-    font-size: 16px !important; /* Prevents iOS auto-zoom */
-    line-height: 1.6 !important; /* Must be identical */
-    padding: 20px !important; /* Must be identical */
-    margin: 0 !important;
-    letter-spacing: normal !important;
-    word-spacing: normal !important;
-    box-sizing: border-box !important;
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
-  }
-
-  /* 5. DRAWER: Stays as a bottom sheet pop-up */
+  /* 5. DRAWER: Bottom sheet */
   .drawer {
     position: fixed;
     bottom: 0;
