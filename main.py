@@ -219,7 +219,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                 continue
 
             # New: Stronger filters to reduce nonsense
-            if score < 100:  # Datamuse score threshold - adjust if needed
+            if score < 200:  # Datamuse score threshold - adjust if needed
                 continue
 
             # Reject very generic or boring nouns
