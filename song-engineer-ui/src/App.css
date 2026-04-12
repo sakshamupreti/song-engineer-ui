@@ -76,44 +76,49 @@ header {
   font-size: 0.75rem;
 }
 
-/* --- EDITOR & GUTTER --- */
-.main-layout { display: flex; position: relative; height: calc(100vh - 60px); }
-
+/* --- 1. GLOBAL RESET & FONT LOCK --- */
+/* We apply identical font metrics to every layer of the 'sandwich' */
 .editor-textarea,
 .editor-backdrop,
-.syllable-gutter {
+.syllable-gutter,
+.gutter-line {
   font-family: 'Courier New', Courier, monospace !important;
   font-size: 1.1rem !important;
-  line-height: 1.6 !important;
-  padding: 20px !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
-  white-space: pre-wrap !important;
-  word-wrap: break-word !important;
+  line-height: 1.6 !important; /* Perfect vertical rhythm */
+  font-variant-ligatures: none;
+  -webkit-text-size-adjust: none; /* Prevents iPhone from auto-scaling text */
 }
 
-/* Ensure the gutter doesn't have extra padding that pushes the numbers off */
+/* --- 2. THE MAIN LAYOUT --- */
+.main-layout { 
+  display: flex; 
+  position: relative; 
+  height: calc(100vh - 60px); 
+  overflow: hidden;
+}
+
+/* --- 3. THE SYLLABLE GUTTER --- */
 .syllable-gutter {
   width: 50px !important;
   background: #0f172a;
-  color: #4b5563; /* Slate 500 */
+  color: #4b5563;
   border-right: 1px solid #1e293b;
-  text-align: center;
-  overflow: hidden;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  padding-top: 20px !important; /* MUST match editor padding */
+  overflow: hidden;
+  z-index: 5;
 }
 
-/* Sync the line height of the gutter numbers */
 .gutter-line {
-  height: calc(1.1rem * 1.6) !important;
+  height: calc(1.1rem * 1.6) !important; /* Matches line-height exactly */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Position layers perfectly on top of each other */
+/* --- 4. THE EDITOR STACK --- */
 .editor-wrapper {
   position: relative;
   flex: 1;
@@ -121,15 +126,25 @@ header {
   overflow: hidden;
 }
 
-.editor-textarea {
+.editor-textarea,
+.editor-backdrop {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  padding: 20px !important; /* Standard padding for both */
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  text-align: left !important;
+}
+
+.editor-textarea {
   background: transparent !important;
-  color: transparent !important;
-  caret-color: #ff4b4b;
+  color: transparent !important; /* Typed text is invisible */
+  caret-color: #ff4b4b; /* Cursor is visible */
   z-index: 2;
   resize: none;
   border: none !important;
@@ -137,11 +152,8 @@ header {
 }
 
 .editor-backdrop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  background: #0f172a; /* Same as gutter */
+  color: #e2e8f0;
   z-index: 1;
   pointer-events: none;
 }
@@ -517,52 +529,32 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 
 /* 1. GLOBAL SCROLL LOCK: Kill all horizontal scrolling */
 @media (max-width: 768px) {
-  /* 1. Reset layout to a vertical stack between header and glass */
+  /* Pushes the entire editor down so line 1 isn't behind the header/menu */
   .main-layout {
-    display: flex !important;
-    flex-direction: column !important;
-    height: calc(100dvh - 120px) !important; /* Use dvh for mobile browser bars */
-    overflow: hidden !important;
+    margin-top: 110px !important; /* Header (50px) + Menu (60px) */
+    height: calc(100vh - 110px) !important;
+    flex-direction: row !important; /* Keeps gutter on left, text on right */
   }
 
-  /* 2. PERMANENT MENU UNDER HEADER: No more floating/covering */
+  /* Anchors the menu directly under the header as a permanent strip */
   .side-nav {
-    order: -1; /* Pushes nav to the top of the stack (under header) */
-    position: relative !important; 
-    bottom: auto !important;
-    width: 100% !important;
+    position: fixed !important;
+    top: 50px !important;
+    left: 0;
+    right: 0;
     height: 60px !important;
+    width: 100% !important;
     flex-direction: row !important;
-    background: #0f172a !important;
+    z-index: 50;
+    background: #0f172a;
     border-bottom: 1px solid #1e293b;
-    border-top: none !important;
-    flex-shrink: 0 !important; /* Prevents menu from squashing */
-    z-index: 10;
-    overflow-x: auto;
-    scrollbar-width: none;
   }
-
-  /* 3. EDITOR: Takes up exactly what is left */
-  .editor-container {
-    flex: 1 !important;
-    position: relative !important;
-    padding-bottom: 0 !important;
-    overflow: hidden !important;
-  }
-
-  /* 4. CURSOR & TEXT ALIGNMENT: Pixel-perfect matching */
+  
+  /* Reset padding slightly for mobile screen real estate */
   .editor-textarea,
-  .editor-backdrop {
-    font-family: 'Inter', -apple-system, system-ui, sans-serif !important;
-    font-size: 16px !important; /* Prevents iOS auto-zoom */
-    line-height: 1.6 !important; /* Must be identical */
-    padding: 20px !important; /* Must be identical */
-    margin: 0 !important;
-    letter-spacing: normal !important;
-    word-spacing: normal !important;
-    box-sizing: border-box !important;
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
+  .editor-backdrop,
+  .syllable-gutter {
+    padding-top: 15px !important;
   }
 
   /* 5. DRAWER: Stays as a bottom sheet pop-up */
