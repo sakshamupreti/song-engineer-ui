@@ -319,10 +319,10 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 
 /* --- SYNTAX HIGHLIGHTING IDE --- */
 .editor-wrapper {
-  position: relative;
-  flex: 1;
-  background: transparent;
-  display: block; /* Changed from flex to block to stabilize absolute children */
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* --- THE FIX: PIXEL-PERFECT ALIGNMENT --- */
@@ -338,6 +338,11 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
   white-space: pre-wrap !important;
   word-wrap: break-word !important;
   box-sizing: border-box !important;
+  text-align: left !important;
+  display: block !important;
+  /* Ensure no flexbox centering is interfering */
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
   
   /* Ensure they start at the exact same coordinate */
   position: absolute !important;
