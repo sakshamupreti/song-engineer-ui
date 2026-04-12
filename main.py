@@ -2,13 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from conceptual_metaphors import CONCEPTUAL_MAPPINGS
-import theory_engine as engine
-import requests
 import aiohttp
 import asyncio
 import math
-import random
-from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -60,9 +56,9 @@ def get_stress_pattern(tags: list) -> str:
             pattern = ""
             for char in pron:
                 if char == '0':
-                    pattern += "◦"  # unstressed
+                    pattern += "◦"
                 elif char in ('1', '2'):
-                    pattern += "•"  # stressed
+                    pattern += "•"
             return pattern
     return ""
 
@@ -84,15 +80,13 @@ BORING_CONCEPTS = {
     "gain", "system", "level", "reason", "period"
 }
 
-# --- SMART METAPHOR ARTICLE (correctly handles "a", "an", and no article) ---
+# --- SMART METAPHOR ARTICLE ---
 def get_metaphor_article(noun: str) -> str:
-    """Returns '', 'a ', or 'an ' — fixed for words like 'echo', 'ocean', 'abyss' etc."""
     if not noun:
         return ""
     
     noun_lower = noun.lower().strip()
     
-    # Words that sound better in metaphors WITHOUT any article
     no_article = {
         "fire", "flame", "heat", "cold", "darkness", "light", "shadow", "echo", "void", "chaos",
         "madness", "gravity", "poison", "pressure", "storm", "wind", "rain", "fog", "mist",
@@ -134,11 +128,9 @@ def get_metaphor_article(noun: str) -> str:
     if noun_lower in no_article:
         return ""
     
-    # Plural nouns usually take no article in poetic metaphors
     if noun_lower.endswith('s') and not noun_lower.endswith(('ss', 'us', 'is', 'cs', 'ys')):
         return ""
     
-    # Return "a " or "an " correctly for countable nouns
     return get_article(noun) + " "
 
 
@@ -179,6 +171,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         hypernyms.update(BORING_CONCEPTS)
         verb = get_verb(query_lower)
 
+        # 1. Basic Conceptual Metaphors (from your dictionary)
         if query_lower in CONCEPTUAL_MAPPINGS:
             source_extension_results = results[3:] 
             for i, source in enumerate(sources):
@@ -205,7 +198,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                                 "meaning": f"🌿 POETIC EXTENSION | Extending the '{source}' mapping further down to its structural component ('{word}')."
                             })
 
-                # ==================== IMPROVED ONTOLOGICAL METAPHORS ====================
+        # 2. IMPROVED ONTOLOGICAL METAPHORS (moved outside the if block)
         for item in results[0]:
             word = item.get("word", "").strip()
             score = item.get("score", 0)
@@ -217,20 +210,13 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                 continue
             if "n" not in tags:
                 continue
-
-            # New: Stronger filters to reduce nonsense
-            if score < 200:  # Datamuse score threshold - adjust if needed
+            if score < 200:
                 continue
 
-            # Reject very generic or boring nouns
             generic_words = {"thing", "person", "way", "kind", "type", "form", "part", "side", "place", "time", 
                            "state", "level", "point", "case", "fact", "idea", "concept", "feeling", "emotion"}
             if word.lower() in generic_words or word.lower() in BORING_CONCEPTS:
                 continue
-
-            # Prefer words that appear in your CONCEPTUAL_MAPPINGS sources (high quality)
-            is_in_dict = any(word.lower() in CONCEPTUAL_MAPPINGS.get(q, {}).get("sources", []) 
-                           for q in CONCEPTUAL_MAPPINGS)
 
             article = get_metaphor_article(word)
             bold_metaphor = f"{query.capitalize()} {verb} {article}{word}"
@@ -238,18 +224,14 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
             if bold_metaphor.lower() not in seen:
                 seen.add(bold_metaphor.lower())
                 
-                meaning = ("🔗 ONTOLOGICAL MAPPING | Treating the abstract concept of '" + query + 
-                          "' as a concrete physical entity or substance: a '" + word + "'.")
+                meaning = f"🔗 ONTOLOGICAL MAPPING | Treating the abstract concept of '{query}' as a concrete physical entity or substance: a '{word}'."
                 
-                if is_in_dict:
-                    meaning = "⭐ HIGH-QUALITY ONTOLOGICAL | " + meaning[4:]  # mark dictionary-backed ones
-
                 formatted_phrases.append({
                     "text": bold_metaphor,
                     "meaning": meaning
                 })
 
-        # Poetic elaborations
+        # 3. Poetic Elaborations
         valid_adjectives = [
             item["word"].lower() 
             for item in results[1] 
@@ -279,6 +261,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         return {"phrases": formatted_phrases}
 
     elif phrase_type == "Similes":
+        # (Your simile section with the fix for "As sweet as honey")
         seen = set()
         tasks = [
             fetch_datamuse({"rel_trg": query, "md": "dp", "max": 25}), 
@@ -303,7 +286,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
             tags = item.get("tags", [])
             if "n" in tags and " " not in word and word.lower() != query_lower:
                 article = get_article(word)
-                phrase = f"{query.capitalize()} {verb} like {article} {word}"
+                phrase = f"{query.capitalize()} {verb} like {article}{word}"
                 if phrase.lower() not in seen:
                     seen.add(phrase.lower())
                     formatted_phrases.append({
@@ -318,13 +301,14 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
             and " " not in item["word"] 
             and item["word"].lower() not in UNPOETIC_ADJS
         ]
-        for adj in valid_adjectives[:8]:
+
+        for adj in valid_adjectives[:12]:
             phrase = f"As {query} as {adj}"
             if phrase.lower() not in seen:
                 seen.add(phrase.lower())
                 formatted_phrases.append({
                     "text": phrase.capitalize(),
-                    "meaning": f"✨ DESCRIPTIVE SIMILE | Anchoring a comparison using the '{adj}' nature of {query}."
+                    "meaning": f"✨ DESCRIPTIVE SIMILE | Standard English simile comparing '{query}' to '{adj}'."
                 })
 
         return {"phrases": formatted_phrases}
