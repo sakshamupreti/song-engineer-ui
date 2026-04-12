@@ -12,7 +12,6 @@ body {
   font-family: 'Inter', -apple-system, sans-serif;
   background-color: var(--bg-dark);
   color: var(--text-main);
-  overflow: hidden;
 }
 
 /* --- HEADER --- */
@@ -122,11 +121,10 @@ header {
 
 /* --- THE FIX: PIXEL-PERFECT ALIGNMENT --- */
 .editor-wrapper {
-  display: block !important;
+  flex: 1 !important; /* Forces it to fill the screen next to the gutter */
   position: relative !important;
-  width: 100% !important;
   height: 100% !important;
-  overflow: hidden !important;
+  overflow: hidden !important; 
 }
 
 .editor-textarea,
@@ -165,6 +163,8 @@ header {
   /* Let the invisible textarea handle all the actual scrolling */
   overflow-y: auto !important; 
   overflow-x: auto !important; 
+
+  -webkit-overflow-scrolling: touch !important; /* Smooth scrolling on mobile */
 }
 
 .editor-backdrop {
