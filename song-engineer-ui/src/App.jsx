@@ -569,7 +569,7 @@ function App() {
             <div className="editor-backdrop" ref={backdropRef}>{renderLyricsIDE()}</div>
             <textarea
               className="editor-textarea"
-              ref={textAreaRefRef}
+              ref={textAreaRef}
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
               onScroll={handleScroll}
