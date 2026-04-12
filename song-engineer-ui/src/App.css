@@ -7,7 +7,7 @@
   --bg-input: #2a2a2a;
 }
 
-/* ✅ ROOT FIX + MOBILE VIEWPORT FIX */
+/* ✅ ROOT FIX */
 html, body {
   margin: 0;
   height: 100%;
@@ -26,14 +26,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 0;
-}
-
-/* 🔑 MOBILE VIEWPORT TRUE HEIGHT */
-@supports (height: 100dvh) {
-  #root {
-    height: 100dvh;
-  }
+  min-height: 0; /* 🔑 critical */
 }
 
 /* --- HEADER --- */
@@ -121,7 +114,7 @@ header {
 /* --- GUTTER --- */
 .syllable-gutter {
   font-family: 'Courier New', monospace !important;
-  font-size: 16px !important;
+  font-size: 1rem !important; 
   line-height: 1.6 !important; 
   padding: 20px 0 !important;
   display: flex;
@@ -132,12 +125,13 @@ header {
   flex-shrink: 0;
   align-items: center !important;
   box-sizing: border-box !important;
+
+  /* 🔧 KEY CHANGE */
   overflow: hidden;
-  position: relative;
 }
 
 .gutter-line {
-  height: calc(16px * 1.6) !important; 
+  height: calc(1rem * 1.6) !important; 
   width: 100% !important;
   display: flex;
   align-items: center;
@@ -145,46 +139,47 @@ header {
   flex-shrink: 0 !important; 
 }
 
-/* --- EDITOR WRAPPER (SCROLL OWNER) --- */
+/* --- EDITOR WRAPPER --- */
 .editor-wrapper {
   flex: 1 !important;
   position: relative !important;
-  overflow: auto !important; /* ✅ SINGLE SCROLL SOURCE */
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden !important; /* Wrapper stays rigid */
   min-width: 0 !important;  
   min-height: 0 !important; 
 }
 
-/* --- TEXTAREA + BACKDROP --- */
+/* --- THE DRIFT-PROOF LOCK --- */
 .editor-textarea,
 .editor-backdrop {
+  /* 1. Typography Lock */
   font-family: 'Courier New', Courier, 'Liberation Mono', monospace !important;
-  font-size: 16px !important;
+  font-size: 16px !important; /* Hard pixel lock prevents mobile zoom drift */
   line-height: 1.6 !important;
   letter-spacing: normal !important;
   word-spacing: normal !important;
   tab-size: 4 !important;
-
+  
+  /* 2. Box Model Lock */
   padding: 20px !important;
   margin: 0 !important;
   border: 1px solid transparent !important;
   box-sizing: border-box !important;
   text-align: left !important;
 
+  /* 3. Alignment Lock */
   position: absolute !important;
-  top: 0;
-  left: 0;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
+  height: 100% !important;
 
-  /* 🔑 CRITICAL FIX */
-  min-height: 100% !important;
-
+  /* 4. White-Space Lock */
   white-space: pre !important;
   overflow-wrap: normal !important;
   word-break: normal !important;
 }
 
-/* --- TEXTAREA --- */
+/* --- TEXTAREA (The Scroll Engine Returns) --- */
 .editor-textarea {
   background: transparent !important;
   color: transparent !important; 
@@ -193,32 +188,38 @@ header {
   resize: none;
   outline: none !important;
 
-  /* ❌ NO SCROLL HERE */
-  overflow: hidden !important;
-
-  -webkit-appearance: none !important;
+  /* Textarea handles scrolling again */
+  overflow: auto !important; 
+  -webkit-overflow-scrolling: touch !important;
+  -webkit-appearance: none !important; /* Destroys Apple's ghost padding */
   appearance: none !important;
 }
 
-/* --- BACKDROP --- */
+/* --- BACKDROP (The Glass Overlay) --- */
 .editor-backdrop {
   color: #e2e8f0; 
   z-index: 1;
   pointer-events: none; 
-  overflow: hidden !important;
+  overflow: hidden !important; /* Driven by JS Sync */
 }
 
+/* THE HTML EMPTY-LINE FIX */
+/* A zero-width space forces the browser to render the very last empty line when you hit Enter */
 .editor-backdrop::after {
   content: "\200B"; 
 }
 
-/* --- SCROLLBAR --- */
-.editor-wrapper::-webkit-scrollbar { width: 8px; height: 8px; }
-.editor-wrapper::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+/* --- SYLLABLE GUTTER SYNC --- */
+.syllable-gutter {
+  font-size: 16px !important; /* Match the new 16px hard lock */
+}
+.gutter-line {
+  height: calc(16px * 1.6) !important; /* Match the new math */
+}
 
-/* =========================================
-   AESTHETICS & UI COMPONENTS (PRESERVED)
-========================================= */
+/* --- SCROLLBAR POLISH --- */
+.editor-textarea::-webkit-scrollbar { width: 8px; height: 8px; }
+.editor-textarea::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
 
 /* IDE Syntax Styles */
 .chord-highlight { color: #3b82f6; font-weight: bold; background: rgba(59, 130, 246, 0.15); border-radius: 4px; padding: 0 2px; }
@@ -357,12 +358,11 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
   }
 
   .main-layout {
+    display: flex !important;
     flex-direction: column !important;
-  }
-
-  .editor-container {
     flex: 1 !important;
     min-height: 0 !important;
+    overflow: hidden !important;
   }
 
   .side-nav {
@@ -385,6 +385,17 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
   }
 
   .nav-btn { height: 35px !important; width: 35px !important; font-size: 1rem !important; }
+
+  .editor-container {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: row !important; 
+    position: relative !important;
+    background: #161616;
+    overflow: hidden !important; 
+    min-width: 0 !important;  
+    min-height: 0 !important; 
+  }
 
   .drawer {
     position: fixed;

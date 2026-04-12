@@ -84,10 +84,11 @@ function App() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   
-  // --- THE DRIFT-PROOF HARDWARE WIRES ---
-  const editorRef = useRef(null);   // Textarea (The Scroll Boss Returns)
+  // --- HARDWARE WIRES (REFS) ---
+  const editorRef = useRef(null);   // Textarea
   const backdropRef = useRef(null); // Colored Syntax
   const gutterRef = useRef(null);   // Numbers
+  const wrapperRef = useRef(null);  // NEW: The Scroll Boss
   
   const metronomeInterval = useRef(null);
   const droneNodes = useRef([]);
@@ -456,20 +457,18 @@ function App() {
     return () => clearInterval(metronomeInterval.current);
   }, [isMetronomePlaying, bpm]);
 
-  // --- THE NEW SCROLL SYNC ENGINE (LISTENING TO TEXTAREA) ---
+  // --- THE NEW SCROLL SYNC ENGINE ---
   const handleScroll = () => {
-    // 1. We read the scroll data directly from the textarea
+    // Listen to the textarea again!
     if (!editorRef.current) return;
 
     const currentScrollTop = editorRef.current.scrollTop;
     const currentScrollLeft = editorRef.current.scrollLeft;
     
-    // 2. We push those coordinates to the colored background
     if (backdropRef.current) {
       backdropRef.current.scrollTop = currentScrollTop;
       backdropRef.current.scrollLeft = currentScrollLeft;
     }
-    // 3. We push ONLY the Y coordinate to the syllable numbers
     if (gutterRef.current) {
       gutterRef.current.scrollTop = currentScrollTop;
     }
@@ -557,7 +556,8 @@ function App() {
             })}
           </div>
 
-          <div className="editor-wrapper">
+          <div className="editor-wrapper" ref={wrapperRef}>
+            
             <div className="editor-backdrop" ref={backdropRef}>
               {renderLyricsIDE()}
             </div>
@@ -565,7 +565,7 @@ function App() {
             <textarea
               className="editor-textarea"
               ref={editorRef}
-              onScroll={handleScroll}
+              onScroll={handleScroll} /* <--- MOVED BACK HERE */
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
               onSelect={handleSelection}
