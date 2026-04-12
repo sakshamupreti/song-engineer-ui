@@ -106,7 +106,7 @@ header {
 }
 
 .gutter-line {
-  height: calc(1rem * 1.6) !important; /* Font-size * line-height of the editor */
+  height: calc(1.1rem * 1.6) !important; /* Font-size * line-height of the editor */
   display: flex;
   align-items: center;
   justify-content: center;
