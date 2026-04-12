@@ -205,19 +205,49 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                                 "meaning": f"🌿 POETIC EXTENSION | Extending the '{source}' mapping further down to its structural component ('{word}')."
                             })
 
-        # Ontological metaphors
+                # ==================== IMPROVED ONTOLOGICAL METAPHORS ====================
         for item in results[0]:
-            word = item.get("word", "")
+            word = item.get("word", "").strip()
+            score = item.get("score", 0)
             tags = item.get("tags", [])
-            if "n" in tags and " " not in word and word.lower() not in hypernyms and word.lower() != query_lower:
-                article = get_metaphor_article(word)
-                bold_metaphor = f"{query.capitalize()} {verb} {article}{word}"
-                if bold_metaphor.lower() not in seen:
-                    seen.add(bold_metaphor.lower())
-                    formatted_phrases.append({
-                        "text": bold_metaphor,
-                        "meaning": f"🔗 ONTOLOGICAL MAPPING | Giving the abstract concept of '{query}' the physical boundaries and weight of a '{word}'."
-                    })
+
+            if not word or " " in word:
+                continue
+            if word.lower() in hypernyms or word.lower() == query_lower:
+                continue
+            if "n" not in tags:
+                continue
+
+            # New: Stronger filters to reduce nonsense
+            if score < 100:  # Datamuse score threshold - adjust if needed
+                continue
+
+            # Reject very generic or boring nouns
+            generic_words = {"thing", "person", "way", "kind", "type", "form", "part", "side", "place", "time", 
+                           "state", "level", "point", "case", "fact", "idea", "concept", "feeling", "emotion"}
+            if word.lower() in generic_words or word.lower() in BORING_CONCEPTS:
+                continue
+
+            # Prefer words that appear in your CONCEPTUAL_MAPPINGS sources (high quality)
+            is_in_dict = any(word.lower() in CONCEPTUAL_MAPPINGS.get(q, {}).get("sources", []) 
+                           for q in CONCEPTUAL_MAPPINGS)
+
+            article = get_metaphor_article(word)
+            bold_metaphor = f"{query.capitalize()} {verb} {article}{word}"
+
+            if bold_metaphor.lower() not in seen:
+                seen.add(bold_metaphor.lower())
+                
+                meaning = ("🔗 ONTOLOGICAL MAPPING | Treating the abstract concept of '" + query + 
+                          "' as a concrete physical entity or substance: a '" + word + "'.")
+                
+                if is_in_dict:
+                    meaning = "⭐ HIGH-QUALITY ONTOLOGICAL | " + meaning[4:]  # mark dictionary-backed ones
+
+                formatted_phrases.append({
+                    "text": bold_metaphor,
+                    "meaning": meaning
+                })
 
         # Poetic elaborations
         valid_adjectives = [
