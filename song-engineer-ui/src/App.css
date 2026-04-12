@@ -76,7 +76,7 @@ header {
   font-size: 0.75rem;
 }
 
-/* --- EDITOR & GUTTER --- */
+/* --- SYLLABLE GUTTER & EDITOR ALIGNMENT SYSTEM --- */
 .main-layout { display: flex; position: relative; height: calc(100vh - 60px); }
 
 .editor-container {
@@ -87,49 +87,119 @@ header {
   overflow: hidden; 
 }
 
-/* --- SYLLABLE GUTTER FIX --- */
 .syllable-gutter {
-  /* Must match the line-height and padding of your editor-textarea exactly */
-  padding-top: 20px !important; 
+  /* 1. TYPOGRAPHY MATCH: Must be identical to editor */
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 1rem !important; 
   line-height: 1.6 !important; 
-  font-size: 18px !important; /* Slightly smaller is fine, but line-height is KEY */
   
-  /* Ensure it doesn't have a header/nav overlap */
+  /* 2. PADDING MATCH: Must match editor exactly so line 1 starts at the same height */
+  padding-top: 20px !important; 
+  padding-bottom: 20px !important;
+  
   position: relative !important;
   display: flex;
   flex-direction: column;
   background: #121212;
   border-right: 1px solid #1e293b;
-  width: 40px !important;
+  width: 45px !important;
   flex-shrink: 0;
   align-items: center !important;
+  box-sizing: border-box !important;
+  
+  /* Hides the scrollbar but allows React to scroll it via JS */
+  overflow: hidden !important; 
 }
 
 .gutter-line {
-  height: calc(1rem * 1.6) !important; /* Font-size * line-height of the editor */
+  height: calc(1rem * 1.6) !important; /* Math lock: Font size * line height */
+  width: 100% !important;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0 !important; /* Prevents lines from squishing */
 }
 
-textarea {
-  flex: 1;
-  background: transparent;
-  color: white;
-  border: none;
-  outline: none;
+/* --- THE FIX: PIXEL-PERFECT ALIGNMENT --- */
+.editor-wrapper {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.editor-textarea,
+.editor-backdrop {
+  /* 3. TYPOGRAPHY MATCH: Identical to gutter */
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 1rem !important; 
+  line-height: 1.6 !important;
+  
+  /* 4. PADDING MATCH: Identical to gutter */
+  padding: 20px !important;
+  margin: 0 !important;
+  border: 1px solid transparent !important;
+  box-sizing: border-box !important;
+  text-align: left !important;
+  display: block !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  
+  /* Disable word wrapping so lines never visually break the syllable count */
+  white-space: pre !important; 
+  word-wrap: normal !important; 
+}
+
+.editor-textarea {
+  background: transparent !important;
+  color: transparent !important; 
+  caret-color: #ff4b4b !important; 
+  z-index: 2;
   resize: none;
-  padding-top: 40px; 
-  padding-left: 30px;
-  padding-right: 50px;
-  line-height: 32px; 
-  font-size: 1.25rem; 
-  font-family: 'Georgia', serif;
-  white-space: pre; 
-  overflow-y: auto;
+  outline: none !important;
+  
+  /* Let the invisible textarea handle all the actual scrolling */
+  overflow-y: auto !important; 
+  overflow-x: auto !important; 
 }
 
-/* --- DRAWER SYSTEM --- */
+.editor-backdrop {
+  color: #e2e8f0; 
+  z-index: 1;
+  pointer-events: none; 
+  overflow: hidden !important; /* React JS handles scrolling this layer */
+}
+
+/* IDE Syntax Styles */
+.chord-highlight {
+  color: #3b82f6;
+  font-weight: bold;
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.section-highlight {
+  color: #a855f7;
+  font-weight: bold;
+  background: rgba(168, 85, 247, 0.15);
+  padding: 2px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+.cliche-highlight {
+  text-decoration: underline wavy #eab308;
+  cursor: help;
+}
+
+/* --- DRAWER SYSTEM (DESKTOP) --- */
 .drawer { 
   position: fixed; right: -380px; top: 60px; width: 320px; height: calc(100vh - 60px); 
   background: #1e1e1e; border-left: 1px solid #333; padding: 20px; 
@@ -140,7 +210,7 @@ textarea {
 .drawer-content { display: flex; flex-direction: column; padding-bottom: 80px; }
 .close-btn { background: transparent; border: none; color: #666; cursor: pointer; margin-bottom: 20px; text-align: left; font-size: 0.85rem;}
 
-/* --- SIDE NAV --- */
+/* --- SIDE NAV (DESKTOP) --- */
 .side-nav { position: fixed; right: 0; top: 70px; width: 60px; display: flex; flex-direction: column; gap: 12px; padding: 10px; z-index: 100; }
 .nav-btn { width: 42px; height: 42px; background: #2a2a2a; border: 1px solid #444; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; color: white; transition: 0.2s; }
 .nav-btn:hover { background: #333; }
@@ -319,82 +389,6 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 .prog-actions .play-btn { background: #22c55e; }
 .prog-actions .play-btn:hover { background: #16a34a; }
 
-/* --- SYNTAX HIGHLIGHTING IDE --- */
-.editor-wrapper {
-  display: block !important;
-  position: relative !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* --- THE FIX: PIXEL-PERFECT ALIGNMENT --- */
-.editor-textarea,
-.editor-backdrop {
-  font-family: 'Courier New', Courier, monospace !important;
-  font-size: 1rem !important; 
-  line-height: 1.6 !important;
-  padding: 20px !important;
-  margin: 0 !important;
-  border: 1px solid transparent !important;
-  box-sizing: border-box !important;
-  text-align: left !important;
-  display: block !important;
-  align-items: flex-start !important;
-  justify-content: flex-start !important;
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  
-  /* THE FIX: Disable word wrapping so the lines always match the gutter */
-  white-space: pre !important; 
-  word-wrap: normal !important; 
-  
-  /* Allow horizontal scrolling for very long lines on mobile */
-  overflow-x: auto !important; 
-}
-
-.editor-textarea {
-  background: transparent !important;
-  color: transparent !important; /* Text is invisible so the backdrop shows the colors */
-  caret-color: #ff4b4b !important; /* BUT THE CURSOR IS VISIBLE */
-  z-index: 2;
-  resize: none;
-}
-
-.editor-backdrop {
-  color: #e2e8f0; /* Slate 200 */
-  z-index: 1;
-  overflow: hidden;
-  pointer-events: none; /* Let clicks pass through to the textarea */
-}
-
-/* IDE Syntax Styles */
-.chord-highlight {
-  color: #3b82f6;
-  font-weight: bold;
-  background: rgba(59, 130, 246, 0.15);
-  border-radius: 4px;
-  padding: 0 2px;
-}
-
-.section-highlight {
-  color: #a855f7;
-  font-weight: bold;
-  background: rgba(168, 85, 247, 0.15);
-  padding: 2px 5px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  font-size: 0.9rem;
-  letter-spacing: 1px;
-}
-
-.cliche-highlight {
-  text-decoration: underline wavy #eab308;
-  cursor: help;
-}
-
 /* --- MAGIC HIGHLIGHT BAR --- */
 .magic-tooltip {
   position: absolute;
@@ -533,7 +527,7 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     border-bottom: none !important;
     flex-shrink: 0 !important; 
     
-    /* THE FIX 1: Elevate the menu to act as a wall over the drawer */
+    /* Elevate the menu to act as a wall over the drawer */
     z-index: 200 !important; 
     
     overflow-x: auto;
@@ -571,7 +565,7 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     z-index: 100; /* Stays below the nav bar now */
     background: #1e1e1e;
     
-    /* THE FIX 2: Push it down by its own height PLUS the 45px menu gap */
+    /* Push it down by its own height PLUS the 45px menu gap */
     transform: translateY(calc(100% + 45px)); 
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     
