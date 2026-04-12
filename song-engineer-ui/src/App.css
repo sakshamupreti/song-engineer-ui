@@ -92,7 +92,7 @@ header {
   /* Must match the line-height and padding of your editor-textarea exactly */
   padding-top: 20px !important; 
   line-height: 1.6 !important; 
-  font-size: 14px !important; /* Slightly smaller is fine, but line-height is KEY */
+  font-size: 18px !important; /* Slightly smaller is fine, but line-height is KEY */
   
   /* Ensure it doesn't have a header/nav overlap */
   position: relative !important;
@@ -480,7 +480,7 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 }
 
 .gutter-target {
-  color: #3b82f6;
+  color: #121212;
   font-size: 0.8rem;
   letter-spacing: 2px;
 }
