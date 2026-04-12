@@ -80,34 +80,34 @@ header {
 .main-layout { display: flex; position: relative; height: calc(100vh - 60px); }
 
 .editor-container {
+  display: flex !important; /* Gutter on left, Editor on right */
+  flex-direction: row !important;
   flex: 1;
-  display: flex;
-  position: relative;
-  background: #161616;
-  overflow: hidden; 
+  overflow: hidden; /* We handle scrolling inside the textarea */
 }
 
 /* --- SYLLABLE GUTTER FIX --- */
 .syllable-gutter {
-  /* 1. The top/bottom padding MUST exactly match the editor's 15px */
-  padding: 15px 10px; 
+  /* Must match the line-height and padding of your editor-textarea exactly */
+  padding-top: 20px !important; 
+  line-height: 1.6 !important; 
+  font-size: 14px !important; /* Slightly smaller is fine, but line-height is KEY */
   
-  /* 2. Typography MUST exactly match the editor */
-  font-family: 'Courier New', Courier, monospace; 
-  font-size: 1.1rem;
-  line-height: 1.6;
-  
-  text-align: right;
-  color: #666;
-  background: #111;
-  border-right: 1px solid #333;
-  overflow-y: hidden; /* Scroll is controlled by the textarea */
-  user-select: none;
+  /* Ensure it doesn't have a header/nav overlap */
+  position: relative !important;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+  border-right: 1px solid #1e293b;
+  width: 40px !important;
+  flex-shrink: 0;
 }
 
 .gutter-line {
-  /* Forces empty lines to still take up exactly one line of vertical space */
-  min-height: calc(1.1rem * 1.6); 
+  height: calc(18px * 1.6) !important; /* Font-size * line-height of the editor */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 textarea {
@@ -319,10 +319,9 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 
 /* --- SYNTAX HIGHLIGHTING IDE --- */
 .editor-wrapper {
-  display: block !important;
-  position: relative !important;
-  width: 100% !important;
-  height: 100% !important;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
 
 /* --- THE FIX: PIXEL-PERFECT ALIGNMENT --- */

@@ -459,8 +459,17 @@ function App() {
   }, [searchWord, activeWordTool, rhymeType, syllableFilter, songTopic]);
 
   const handleScroll = (e) => {
-    if (backdropRef.current) backdropRef.current.scrollTop = e.target.scrollTop;
-    if (gutterRef.current) gutterRef.current.scrollTop = e.target.scrollTop;
+    const { scrollTop } = e.target;
+    
+    // Update the Backdrop (the colors)
+    if (backdropRef.current) {
+      backdropRef.current.scrollTop = scrollTop;
+    }
+    
+    // Update the Gutter (the numbers)
+    if (gutterRef.current) {
+      gutterRef.current.scrollTop = scrollTop;
+    }
   };
 
   // --- NEW: Helper to parse scat pattern for filtering words ---
