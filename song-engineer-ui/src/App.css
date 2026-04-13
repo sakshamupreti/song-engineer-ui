@@ -358,15 +358,34 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
   
   .song-title-container { width: 100% !important; margin: 0 !important; }
 
+  /* 📱 SWIPEABLE TOOLBAR FIX */
   .metronome-bar, .recording-bar {
     width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
-    padding: 4px 10px !important; 
-    gap: 8px !important;
+    justify-content: flex-start !important; /* Aligns left so swiping works correctly */
+    flex-wrap: nowrap !important; /* 🔑 Prevents the metronome from getting pushed down */
+    overflow-x: auto !important; /* Enables horizontal swiping */
+    -webkit-overflow-scrolling: touch; /* Buttery smooth iOS scrolling */
+    scrollbar-width: none; /* Hides the ugly scrollbar */
+    padding: 6px 15px !important; 
+    gap: 12px !important;
     box-sizing: border-box !important;
   }
 
+  /* Hides the scrollbar on Chrome/Safari/iOS */
+  .metronome-bar::-webkit-scrollbar, 
+  .recording-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Stops the buttons and slider from getting squished together */
+  .recording-bar > * {
+    flex-shrink: 0 !important; 
+  }
+
+  /* Keeps the audio player at a safe minimum size */
+  .custom-audio-player {
+    width: 130px !important; 
+  }
   .main-layout {
     display: flex !important;
     flex-direction: column !important;
