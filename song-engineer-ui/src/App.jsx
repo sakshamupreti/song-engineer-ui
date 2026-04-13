@@ -108,9 +108,34 @@ const FIGURES_OF_SPEECH = [
 ];
 
 const PROMPT_LIBRARY = {
-  "Story": [{ title: "The Overheard Conversation", desc: "Start with a line of dialogue you 'overheard' at a coffee shop." }, { title: "Two Strangers", desc: "Write about two strangers waiting for a delayed train in the rain." }],
-  "Emotion": [{ title: "The Quiet Aftermath", desc: "The exact moment of silence after a massive argument ends." }, { title: "Bittersweet Success", desc: "Achieving your biggest dream, but the person you wanted to share it with is gone." }],
-  "Concept": [{ title: "Inanimate Witness", desc: "Write from the perspective of an object witnessing a breakup." }, { title: "Reverse Chronology", desc: "Start at the bitter end of a relationship and write backwards." }]
+  "Story": [
+    { title: "The Overheard Conversation", desc: "Start with a line of dialogue you 'overheard' at a coffee shop." }, 
+    { title: "Two Strangers", desc: "Write about two strangers waiting for a delayed train in the rain." },
+    { title: "The Unsent Letter", desc: "Write the exact contents of a letter/text you wrote but deleted before sending." },
+    { title: "Hometown Ghost", desc: "Describe the feeling of driving through your hometown and realizing you don't belong there anymore." },
+    { title: "The Getaway Car", desc: "Focus entirely on the 5 minutes immediately following a terrible, but necessary, life decision." }
+  ],
+  "Emotion": [
+    { title: "The Quiet Aftermath", desc: "The deafening silence in the room right after a massive argument ends." }, 
+    { title: "Bittersweet Success", desc: "Achieving your biggest dream, but the person you wanted to share it with is gone." },
+    { title: "Right Person, Wrong Time", desc: "The agony of perfect compatibility completely ruined by circumstance." },
+    { title: "Pre-emptive Grief", desc: "Mourning the end of a relationship or era while you are still actively in it." },
+    { title: "Imposter Syndrome", desc: "The terrifying feeling that you are a fraud right as everyone is cheering for you." }
+  ],
+  "Concept": [
+    { title: "Inanimate Witness", desc: "Write from the perspective of a piece of furniture witnessing a breakup." }, 
+    { title: "Reverse Chronology", desc: "Start at the bitter end of a relationship and write backwards to the first hello." },
+    { title: "The Answer Song", desc: "Write a direct response to a famous song from the 'villain's' perspective (e.g., Jolene's side of the story)." },
+    { title: "The Unreliable Narrator", desc: "Write a heartbreak song where it slowly becomes obvious to the listener that the singer was actually the toxic one." },
+    { title: "Micro to Macro", desc: "Verse 1 is about a coffee stain. The Chorus is about the end of the world." }
+  ],
+  "Challenge": [
+    { title: "No Pronouns", desc: "Write an entire verse and chorus without using 'I', 'Me', 'You', 'He', or 'She'." },
+    { title: "One-Chord Wonder", desc: "Write a melody so compelling that the underlying chord progression never has to change." },
+    { title: "Title at the End", desc: "Do not reveal the title or main hook of the song until the very last line of the chorus." },
+    { title: "Syllable Match", desc: "Write two verses where every single line has the exact same syllable count as the corresponding line in the other verse." },
+    { title: "Sensory Overload", desc: "Use all five senses (sight, sound, touch, taste, smell) before the first chorus hits." }
+  ]
 };
 
 const PROGRESSIONS = [
