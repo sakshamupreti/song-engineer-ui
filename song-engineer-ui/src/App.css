@@ -221,6 +221,10 @@ drag-handle {
   display: none; /* Hidden on laptop */
 }
 
+.drawer-overlay {
+  display: none;
+}
+
 .desktop-close-icon {
   font-size: 1.2rem;
   color: #666;
@@ -445,7 +449,31 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     margin: -10px auto 15px auto;
     display: block;
 
-    /* Hide the Close Button (X) entirely on mobile */
+  .drawer-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6); /* Dims the text editor behind the menu */
+    z-index: 90; /* Sits directly beneath the drawer */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  
+  .drawer-overlay.active {
+    opacity: 1;
+    pointer-events: auto; /* Activates the tap detection */
+  }
+
+  /* Ensure the drawer pops above the overlay */
+  .drawer {
+    z-index: 100 !important;
+  }
+
+  /* 🚨 The true kill-switch for the X button */
   .close-btn {
     display: none !important;
   }

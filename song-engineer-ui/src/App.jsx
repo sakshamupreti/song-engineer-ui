@@ -631,6 +631,8 @@ function App() {
           <button onClick={() => setActiveMenu(activeMenu === 'library' ? null : 'library')} className={activeMenu === 'library' ? 'nav-btn active' : 'nav-btn'} title="Library">📚</button>
         </div>
 
+        <div className={`drawer-overlay ${activeMenu ? 'active' : ''}`} onClick={() => setActiveMenu(null)}></div>
+
         <div 
           className={`drawer ${activeMenu ? 'open' : ''}`}
           ref={drawerRef}
@@ -641,11 +643,11 @@ function App() {
           {/* This pill shows on mobile, but is hidden on laptop */}
           <div className="drag-handle"></div>
 
-          {/* This button only contains the X now */}
+          {/* 🚨 Cleaned button: No inline styles allowed here! */}
           <button className="close-btn" onClick={() => setActiveMenu(null)}>
             <span className="desktop-close-icon">✕</span>
           </button>
-          
+
           {activeMenu === 'palette' && (
             <div className="drawer-content">
               <h3>Harmonic Palette</h3>
