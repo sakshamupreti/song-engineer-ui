@@ -111,6 +111,22 @@ header {
   min-height: 0 !important; 
 }
 
+/* --- DESKTOP AUDIO DELETE BUTTON --- */
+.audio-delete-btn {
+  background: rgba(255, 59, 48, 0.1);
+  border: 1px solid rgba(255, 59, 48, 0.5);
+  color: #ff3b30;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 4px 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+.audio-delete-btn:hover { background: rgba(255, 59, 48, 0.2); }
+
 /* --- GUTTER --- */
 .syllable-gutter {
   font-family: 'Courier New', monospace !important;
@@ -371,21 +387,29 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     box-sizing: border-box !important;
   }
 
-  /* Hides the scrollbar on Chrome/Safari/iOS */
-  .metronome-bar::-webkit-scrollbar, 
-  .recording-bar::-webkit-scrollbar {
-    display: none !important;
+  /* 📱 Squeeze the recording bar gaps */
+  .metronome-bar, .recording-bar {
+    gap: 6px !important; /* Reduced from 12px */
+    padding: 6px 5px !important; 
   }
 
-  /* Stops the buttons and slider from getting squished together */
-  .recording-bar > * {
-    flex-shrink: 0 !important; 
-  }
-
-  /* Keeps the audio player at a safe minimum size */
+  /* 📱 Crush the native audio player to its absolute minimum */
   .custom-audio-player {
-    width: 130px !important; 
+    width: 110px !important; /* Forces the browser to drop the empty space */
+    height: 28px !important;
   }
+
+  /* 📱 Shrink the delete button */
+  .audio-delete-btn {
+    padding: 4px 8px !important;
+    font-size: 1rem !important;
+  }
+
+  /* 📱 Slightly shrink the metronome slider to save room */
+  .recording-bar input[type="range"] {
+    width: 50px !important;
+  }
+  
   .main-layout {
     display: flex !important;
     flex-direction: column !important;

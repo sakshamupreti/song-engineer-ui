@@ -596,30 +596,12 @@ function App() {
         <div className="recording-bar">
           <button className={`record-btn ${isRecording ? 'recording' : ''}`} onClick={toggleRecording} title="Record Voice Memo">🎙️</button>
           {audioData && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {/* Added a max-width so the audio player doesn't squash the delete button on small screens */}
-              <audio className="custom-audio-player" src={audioData} controls style={{ maxWidth: '140px' }} />
-              
-              {/* 🔑 THE FIX: A massive, easy-to-hit delete button with padding and a background */}
-              <button 
-                onClick={deleteRecording} 
-                style={{ 
-                  background: 'rgba(255, 59, 48, 0.1)', 
-                  border: '1px solid rgba(255, 59, 48, 0.5)', 
-                  color: '#ff3b30', 
-                  cursor: 'pointer', 
-                  fontSize: '1.2rem', 
-                  padding: '4px 14px', 
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                ✕
-              </button>
+            <div className="audio-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <audio className="custom-audio-player" src={audioData} controls />
+              <button className="audio-delete-btn" onClick={deleteRecording}>✕</button>
             </div>
           )}
+          
           <div style={{ borderLeft: '1px solid #444', height: '20px' }}></div>
           <button onClick={() => setIsMetronomePlaying(!isMetronomePlaying)} style={{background: isMetronomePlaying ? '#ff4b4b' : '#333', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer'}}>
             {isMetronomePlaying ? "⏹" : "▶ MET"}
