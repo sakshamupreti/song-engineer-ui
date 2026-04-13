@@ -639,12 +639,8 @@ function App() {
           onTouchEnd={onTouchEndEvent}
         >
           <div className="drag-handle"></div>
-          <button className="close-btn" onClick={() => setActiveMenu(null)} style={{ display: 'flex', justifyContent: 'center', width: '100%', padding: '10px 0' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-
+          <button className="close-btn" onClick={() => setActiveMenu(null)}>✕</button>
+          
           {activeMenu === 'palette' && (
             <div className="drawer-content">
               <h3>Harmonic Palette</h3>
