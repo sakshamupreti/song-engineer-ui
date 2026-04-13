@@ -94,6 +94,38 @@ function App() {
   const droneNodes = useRef([]);
   const audioCtxRef = useRef(null);
 
+  // --- SWIPE TO DISMISS ENGINE ---
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const drawerRef = useRef(null);
+
+  // Minimum swipe distance in pixels required to close the drawer
+  const minSwipeDistance = 50; 
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null); // Reset on new touch
+    setTouchStart(e.targetTouches[0].clientY);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientY);
+  };
+
+  const onTouchEndEvent = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchEnd - touchStart;
+    const isDownSwipe = distance > minSwipeDistance;
+    
+    // Safety check: Only swipe-close if the drawer content is scrolled to the top
+    // (This prevents accidental closing while reading a long list of words)
+    const isAtTop = drawerRef.current ? drawerRef.current.scrollTop <= 0 : true;
+
+    if (isDownSwipe && isAtTop) {
+      setActiveMenu(null); // Close the drawer!
+    }
+  };
+
   const allKeys = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B", "Cm", "C#m", "Dm", "Ebm", "Em", "Fm", "F#m", "Gm", "G#m", "Am", "Bbm", "Bm"];
 
   // --- iOS AUDIO UNLOCKER ---
@@ -599,8 +631,19 @@ function App() {
           <button onClick={() => setActiveMenu(activeMenu === 'library' ? null : 'library')} className={activeMenu === 'library' ? 'nav-btn active' : 'nav-btn'} title="Library">📚</button>
         </div>
 
-        <div className={`drawer ${activeMenu ? 'open' : ''}`}>
-          <button className="close-btn" onClick={() => setActiveMenu(null)}>✕</button>
+        <div 
+          className={`drawer ${activeMenu ? 'open' : ''}`}
+          ref={drawerRef}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEndEvent}
+        >
+          <div className="drag-handle"></div>
+          <button className="close-btn" onClick={() => setActiveMenu(null)} style={{ display: 'flex', justifyContent: 'center', width: '100%', padding: '10px 0' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
 
           {activeMenu === 'palette' && (
             <div className="drawer-content">
