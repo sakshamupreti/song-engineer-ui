@@ -389,7 +389,7 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 
   /* 📱 Squeeze the recording bar gaps */
   .metronome-bar, .recording-bar {
-    gap: 6px !important; /* Reduced from 12px */
+    gap: 1px !important; /* Reduced from 12px */
     padding: 6px 5px !important; 
   }
 
@@ -409,7 +409,17 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
   .recording-bar input[type="range"] {
     width: 50px !important;
   }
-  
+
+  /* 📱 Center the Metronome permanently (it always fits) */
+  .metronome-bar {
+    justify-content: center !important;
+  }
+
+  /* 📱 Center the Microphone ONLY when nothing is recorded */
+  .recording-bar .record-btn:only-child {
+    margin: 0 auto !important;
+  }
+
   .main-layout {
     display: flex !important;
     flex-direction: column !important;
