@@ -358,6 +358,7 @@ function App() {
   };
 
   // --- VOICE MEMO RECORDER ---
+  // --- VOICE MEMO RECORDER ---
   const toggleRecording = async () => {
     if (isRecording) { 
       mediaRecorderRef.current.stop(); 
@@ -373,8 +374,12 @@ function App() {
         };
         
         mediaRecorderRef.current.onstop = () => {
-          // 🔑 THE FIX: Removed { type: 'audio/webm' }. The browser will now auto-select the correct format for the device.
-          const audioBlob = new Blob(audioChunksRef.current); 
+          // 🔑 THE FIX: Dynamically ask the browser what format it used (WebM for Chrome, MP4 for iOS)
+          const browserFormat = mediaRecorderRef.current.mimeType;
+          
+          // Apply that exact format label to the final audio file
+          const audioBlob = new Blob(audioChunksRef.current, { type: browserFormat }); 
+          
           const reader = new FileReader(); 
           reader.readAsDataURL(audioBlob);
           reader.onloadend = () => setAudioData(reader.result);
@@ -384,7 +389,7 @@ function App() {
         mediaRecorderRef.current.start(); 
         setIsRecording(true);
       } catch (err) { 
-        alert("Microphone access denied. Please check your phone settings."); 
+        alert("Microphone access denied. Please check your system settings."); 
       }
     }
   };
