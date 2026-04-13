@@ -631,7 +631,9 @@ function App() {
           <button onClick={() => setActiveMenu(activeMenu === 'library' ? null : 'library')} className={activeMenu === 'library' ? 'nav-btn active' : 'nav-btn'} title="Library">📚</button>
         </div>
 
-        <div className={`drawer-overlay ${activeMenu ? 'active' : ''}`} onClick={() => setActiveMenu(null)}></div>
+        {activeMenu && (
+          <div className="drawer-overlay" onClick={() => setActiveMenu(null)}></div>
+        )}
 
         <div 
           className={`drawer ${activeMenu ? 'open' : ''}`}
