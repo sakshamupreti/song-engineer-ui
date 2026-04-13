@@ -63,6 +63,14 @@ def get_stress_pattern(tags: list) -> str:
             return pattern
     return ""
 
+def conjugate_verb(base: str) -> str:
+    """Third-person singular present tense conjugation."""
+    if base.endswith(("s", "x", "z", "ch", "sh")):
+        return base + "es"
+    if base.endswith("y") and len(base) > 1 and base[-2] not in "aeiou":
+        return base[:-1] + "ies"
+    return base + "s"
+
 # --- FILTERS ---
 UNPOETIC_ADJS = {
     "short", "long", "good", "bad", "big", "small", "high", "low", "great", "real", "past",
@@ -81,13 +89,77 @@ BORING_CONCEPTS = {
     "gain", "system", "level", "reason", "period"
 }
 
+# Words that are too abstract to serve as good metaphor source domains
+ABSTRACT_SOURCE_FILTER = {
+    "feeling", "thought", "idea", "concept", "emotion", "belief", "sense",
+    "notion", "quality", "state", "condition", "experience", "awareness",
+    "perception", "understanding", "knowledge", "consciousness", "reality",
+    "existence", "being", "essence", "nature", "truth", "meaning", "value",
+    "purpose", "significance", "importance", "relevance", "ability", "capacity",
+    "tendency", "possibility", "opportunity", "situation", "circumstance",
+    "occurrence", "phenomenon", "relationship", "connection", "influence",
+    "effect", "impact", "result", "consequence", "outcome", "response",
+    "reaction", "interaction", "communication", "expression", "representation",
+    "interpretation", "perspective", "attitude", "approach", "method",
+}
+
+BORING_VERBS = {
+    "be", "have", "do", "make", "get", "go", "come", "take", "give", "use",
+    "find", "know", "think", "see", "look", "want", "seem", "become", "include",
+    "continue", "set", "put", "keep", "hold", "turn", "start", "show", "hear",
+    "play", "run", "move", "live", "believe", "feel", "try", "ask", "need",
+    "mean", "call", "tell", "pay", "let", "begin", "stay", "talk", "remain",
+    "happen", "consider", "appear", "help", "change", "follow", "stop",
+    "create", "lose", "bring", "sit", "stand", "say", "work", "cause", "occur",
+    "exist", "involve", "affect", "relate", "refer", "describe", "suggest",
+    "indicate", "represent", "define", "determine", "establish", "provide",
+    "allow", "enable", "require", "contain", "form", "produce", "develop",
+}
+
+# Relational bridge nouns: (bridge_noun, label, explanation_template)
+RELATIONAL_BRIDGES = [
+    ("weight",    "⚖️ PHYSICAL WEIGHT",   "Treating {q} as something that exerts downward bodily pressure."),
+    ("shadow",    "🌑 SHADOW",            "Treating {q} as something that blocks light and casts darkness behind it."),
+    ("echo",      "🔊 RESONANCE",         "Treating {q} as a sound event that reverberates long after its source."),
+    ("undertow",  "🌀 HIDDEN PULL",       "Treating {q} as an unseen current that drags beneath a calm surface."),
+    ("pulse",     "💓 LIVING RHYTHM",     "Treating {q} as something with a detectable, biological beat."),
+    ("fracture",  "💔 STRUCTURAL BREAK",  "Treating {q} as something that cracks under accumulated pressure."),
+    ("residue",   "🫧 LINGERING TRACE",   "Treating {q} as something that leaves a physical remainder after it passes."),
+    ("edge",      "🔪 SHARP BOUNDARY",    "Treating {q} as something with a dangerous, defined perimeter."),
+    ("current",   "⚡ DIRECTIONAL FLOW",  "Treating {q} as an invisible force that carries objects along with it."),
+    ("root",      "🌱 BURIED ORIGIN",     "Treating {q} as something that grows upward from a hidden source."),
+    ("gravity",   "🪐 ATTRACTION FIELD",  "Treating {q} as an invisible force pulling everything toward a centre."),
+    ("threshold", "🚪 LIMINAL POINT",     "Treating {q} as a point of no return — a crossing that changes everything."),
+    ("kindling",  "🔥 IGNITION MATERIAL", "Treating {q} as something that catches fire from the smallest spark."),
+    ("tide",      "🌊 RHYTHMIC FORCE",    "Treating {q} as a cyclical, irresistible natural movement."),
+]
+
+# Which adjectives (from rel_jjb) activate which relational bridges
+ADJ_ACTIVATES = {
+    "heavy":   ["weight", "gravity", "tide"],
+    "dark":    ["shadow", "undertow", "residue"],
+    "sharp":   ["edge", "fracture"],
+    "deep":    ["current", "undertow", "root"],
+    "cold":    ["edge", "threshold", "residue"],
+    "warm":    ["kindling", "pulse", "current"],
+    "bright":  ["pulse", "kindling"],
+    "slow":    ["tide", "weight", "gravity"],
+    "loud":    ["echo", "pulse"],
+    "quiet":   ["echo", "residue", "shadow"],
+    "strong":  ["current", "gravity", "tide"],
+    "weak":    ["fracture", "residue"],
+    "empty":   ["echo", "threshold", "residue"],
+    "burning": ["kindling", "edge", "pulse"],
+    "hollow":  ["echo", "shadow", "threshold"],
+}
+
 # --- SMART METAPHOR ARTICLE ---
 def get_metaphor_article(noun: str) -> str:
     if not noun:
         return ""
-    
+
     noun_lower = noun.lower().strip()
-    
+
     no_article = {
         "fire", "flame", "heat", "cold", "darkness", "light", "shadow", "echo", "void", "chaos",
         "madness", "gravity", "poison", "pressure", "storm", "wind", "rain", "fog", "mist",
@@ -125,13 +197,13 @@ def get_metaphor_article(noun: str) -> str:
         "crookedness", "fabrication", "mask", "web", "smoke", "door", "window", "path", "gift",
         "seed", "train", "tide"
     }
-    
+
     if noun_lower in no_article:
         return ""
-    
+
     if noun_lower.endswith('s') and not noun_lower.endswith(('ss', 'us', 'is', 'cs', 'ys')):
         return ""
-    
+
     return get_article(noun) + " "
 
 
@@ -140,7 +212,7 @@ def get_metaphor_article(noun: str) -> str:
 async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
     if not query:
         return {"phrases": []}
-    
+
     formatted_phrases = []
     query_lower = query.lower().strip()
 
@@ -156,11 +228,11 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
     elif phrase_type == "Metaphors":
         seen = set()
         tasks = [
-            fetch_datamuse({"rel_trg": query, "md": "dp", "max": 25}), 
-            fetch_datamuse({"rel_jjb": query, "md": "p", "max": 15}),  
-            fetch_datamuse({"rel_gen": query, "max": 10})              
+            fetch_datamuse({"rel_trg": query, "md": "dp",  "max": 25}),
+            fetch_datamuse({"rel_jjb": query, "md": "p",   "max": 15}),
+            fetch_datamuse({"rel_gen": query,               "max": 10})
         ]
-        
+
         sources = []
         if query_lower in CONCEPTUAL_MAPPINGS:
             sources = CONCEPTUAL_MAPPINGS[query_lower]["sources"]
@@ -172,20 +244,22 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         hypernyms.update(BORING_CONCEPTS)
         verb = get_verb(query_lower)
 
-        # 1. Basic Conceptual Metaphors (from your dictionary)
+        # ================================================================
+        # 1. BASIC CONCEPTUAL METAPHORS  (from CONCEPTUAL_MAPPINGS — unchanged)
+        # ================================================================
         if query_lower in CONCEPTUAL_MAPPINGS:
-            source_extension_results = results[3:] 
+            source_extension_results = results[3:]
             for i, source in enumerate(sources):
                 article = get_metaphor_article(source)
                 phrase = f"{query.capitalize()} {verb} {article}{source}"
-                
+
                 if phrase.lower() not in seen:
                     seen.add(phrase.lower())
                     formatted_phrases.append({
                         "text": phrase,
                         "meaning": f"🧠 BASIC CONCEPTUAL METAPHOR | Understanding the abstract target ({query}) through the concrete structure of a {source}."
                     })
-                
+
                 dataset = source_extension_results[i]
                 for item in dataset:
                     word = item.get("word", "")
@@ -199,48 +273,151 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                                 "meaning": f"🌿 POETIC EXTENSION | Extending the '{source}' mapping further down to its structural component ('{word}')."
                             })
 
-        # 2. IMPROVED ONTOLOGICAL METAPHORS (moved outside the if block)
-        for item in results[0]:
-            word = item.get("word", "").strip()
-            score = item.get("score", 0)
-            tags = item.get("tags", [])
+        # ================================================================
+        # 2A. VERBAL METAPHORS  —  "Grief settles" / "Joy erupts"
+        # Filter rel_trg and ml results for verbs only. These are the
+        # most evocative metaphor type and were absent from the original.
+        # ================================================================
+        verb_tasks = [
+            fetch_datamuse({"rel_trg": query_lower, "md": "p", "max": 50}),
+            fetch_datamuse({"ml":      query_lower, "md": "p", "max": 30}),
+        ]
+        verb_raw = await asyncio.gather(*verb_tasks)
 
-            if not word or " " in word:
-                continue
-            if word.lower() in hypernyms or word.lower() == query_lower:
-                continue
-            if "n" not in tags:
-                continue
-            if score < 200:
-                continue
+        verb_candidates = {}
+        for dataset in verb_raw:
+            for item in dataset:
+                tags  = item.get("tags", [])
+                word  = item.get("word", "").lower().strip()
+                score = item.get("score", 0)
 
-            generic_words = {"thing", "person", "way", "kind", "type", "form", "part", "side", "place", "time", 
-                           "state", "level", "point", "case", "fact", "idea", "concept", "feeling", "emotion"}
-            if word.lower() in generic_words or word.lower() in BORING_CONCEPTS:
-                continue
+                if "v" not in tags:         continue
+                if " " in word:             continue
+                if word == query_lower:     continue
+                if word in BORING_VERBS:    continue
+                if word in hypernyms:       continue
+                if score < 80:              continue
+                if word in verb_candidates: continue
 
-            article = get_metaphor_article(word)
-            bold_metaphor = f"{query.capitalize()} {verb} {article}{word}"
+                verb_candidates[word] = score
 
-            if bold_metaphor.lower() not in seen:
-                seen.add(bold_metaphor.lower())
-                
-                meaning = f"🔗 ONTOLOGICAL MAPPING | Treating the abstract concept of '{query}' as a concrete physical entity or substance: a '{word}'."
-                
+        for vword, _score in sorted(verb_candidates.items(),
+                                    key=lambda x: x[1], reverse=True)[:10]:
+            conjugated = conjugate_verb(vword)
+            phrase = f"{query.capitalize()} {conjugated}"
+            if phrase.lower() not in seen:
+                seen.add(phrase.lower())
                 formatted_phrases.append({
-                    "text": bold_metaphor,
-                    "meaning": meaning
+                    "text": phrase,
+                    "meaning": (
+                        f"⚡ VERBAL METAPHOR | Attributing the physical action '{vword}' "
+                        f"to '{query}' — animating the abstract as something that acts "
+                        f"and moves in the world."
+                    )
                 })
 
-        # 3. Poetic Elaborations
+        # ================================================================
+        # 2B. RELATIONAL / GENITIVE METAPHORS  —  "The weight of grief"
+        # Uses the concept's adjective profile to score and rank bridge
+        # nouns so the most semantically apt ones surface first.
+        # ================================================================
+        adj_profile = {
+            item["word"].lower()
+            for item in results[1]
+            if "adj" in item.get("tags", ["adj"]) and " " not in item["word"]
+        }
+
+        bridge_scores = {}
+        for adj in adj_profile:
+            for activated in ADJ_ACTIVATES.get(adj, []):
+                bridge_scores[activated] = bridge_scores.get(activated, 0) + 1
+
+        all_bridge_nouns = [b[0] for b in RELATIONAL_BRIDGES]
+        sorted_bridges = sorted(
+            RELATIONAL_BRIDGES,
+            key=lambda b: (-bridge_scores.get(b[0], 0), all_bridge_nouns.index(b[0]))
+        )
+
+        for bridge_noun, label, template in sorted_bridges:
+            phrase = f"The {bridge_noun} of {query_lower}"
+            if phrase.lower() not in seen:
+                seen.add(phrase.lower())
+                formatted_phrases.append({
+                    "text": phrase.capitalize(),
+                    "meaning": f"{label} | {template.format(q=query_lower)}"
+                })
+
+        # ================================================================
+        # 2C. IMPROVED NOMINAL METAPHORS  —  "Grief is a wound"
+        # Replaces the old ontological block with:
+        #   - abstract source noun filter (main failure mode of rel_trg)
+        #   - frequency floor so rare/obscure nouns are excluded
+        #   - length penalty to reward short, imageable, concrete words
+        #   - rel_spc (hyponyms) added for more specific source domains
+        # ================================================================
+        nominal_tasks = [
+            fetch_datamuse({"rel_trg": query_lower, "md": "dpr", "max": 40}),
+            fetch_datamuse({"rel_spc": query_lower, "md": "pr",  "max": 20}),
+        ]
+        nominal_raw = await asyncio.gather(*nominal_tasks)
+
+        nominal_candidates = {}
+        for dataset in nominal_raw:
+            for item in dataset:
+                word  = item.get("word", "").strip()
+                tags  = item.get("tags", [])
+                score = item.get("score", 0)
+
+                if not word or " " in word:                 continue
+                if "n" not in tags:                         continue
+                if word.lower() == query_lower:             continue
+                if word.lower() in hypernyms:               continue
+                if word.lower() in BORING_CONCEPTS:         continue
+                if word.lower() in ABSTRACT_SOURCE_FILTER:  continue
+
+                freq = 1.0
+                for tag in tags:
+                    if tag.startswith("f:"):
+                        try:    freq = float(tag.split(":")[1])
+                        except: pass
+
+                if freq < 0.5: continue
+
+                length_penalty = max(0, len(word) - 7) * 0.04
+                concreteness_score = score * (1 - length_penalty)
+
+                if concreteness_score < 120: continue
+
+                if word.lower() not in nominal_candidates:
+                    nominal_candidates[word.lower()] = (word, concreteness_score)
+
+        for _, (word, _score) in sorted(nominal_candidates.items(),
+                                        key=lambda x: x[1][1], reverse=True)[:12]:
+            article = get_metaphor_article(word)
+            phrase  = f"{query.capitalize()} {verb} {article}{word}"
+            if phrase.lower() not in seen:
+                seen.add(phrase.lower())
+                formatted_phrases.append({
+                    "text": phrase,
+                    "meaning": (
+                        f"🏛️ STRUCTURAL METAPHOR | Mapping the full ontological "
+                        f"structure of '{word.lower()}' onto '{query}' — its properties, "
+                        f"parts, and characteristic behaviours all become available "
+                        f"as ways of understanding the abstract."
+                    )
+                })
+
+        # ================================================================
+        # 3. POETIC ELABORATIONS  (unchanged)
+        # ================================================================
         valid_adjectives = [
-            item["word"].lower() 
-            for item in results[1] 
-            if "adj" in item.get("tags", ["adj"]) 
-            and " " not in item["word"] 
+            item["word"].lower()
+            for item in results[1]
+            if "adj" in item.get("tags", ["adj"])
+            and " " not in item["word"]
             and item["word"].lower() not in UNPOETIC_ADJS
         ]
-        
+
         bridge_tasks = [fetch_datamuse({"rel_jja": adj, "md": "dp", "max": 5}) for adj in valid_adjectives[:8]]
         bridge_results = await asyncio.gather(*bridge_tasks) if bridge_tasks else []
 
@@ -262,11 +439,10 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         return {"phrases": formatted_phrases}
 
     elif phrase_type == "Similes":
-        # (Your simile section with the fix for "As sweet as honey")
         seen = set()
         tasks = [
-            fetch_datamuse({"rel_trg": query, "md": "dp", "max": 25}), 
-            fetch_datamuse({"rel_jjb": query, "md": "p", "max": 15})
+            fetch_datamuse({"rel_trg": query, "md": "dp", "max": 25}),
+            fetch_datamuse({"rel_jjb": query, "md": "p",  "max": 15})
         ]
         sources = CONCEPTUAL_MAPPINGS.get(query_lower, {}).get("sources", [])
         results = await asyncio.gather(*tasks)
@@ -281,7 +457,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                         "text": phrase,
                         "meaning": f"🧠 CONCEPTUAL SIMILE | Explicitly comparing '{query}' to the structure of a {source}."
                     })
-        
+
         for item in results[0]:
             word = item.get("word", "")
             tags = item.get("tags", [])
@@ -296,10 +472,10 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                     })
 
         valid_adjectives = [
-            item["word"].lower() 
-            for item in results[1] 
-            if "adj" in item.get("tags", ["adj"]) 
-            and " " not in item["word"] 
+            item["word"].lower()
+            for item in results[1]
+            if "adj" in item.get("tags", ["adj"])
+            and " " not in item["word"]
             and item["word"].lower() not in UNPOETIC_ADJS
         ]
 
@@ -320,7 +496,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
 @app.get("/api/words")
 async def get_words(word: str, query_type: str, sub_type: str = "Perfect", syllables: int = None, topic: str = None):
     word_lower = word.lower().strip()
-    
+
     if query_type == "Rhymes":
         target_info = await fetch_datamuse({"sp": word_lower, "md": "srf", "max": 1})
         target_syl = target_info[0].get("numSyllables", 1) if target_info else 1
@@ -328,7 +504,7 @@ async def get_words(word: str, query_type: str, sub_type: str = "Perfect", sylla
         def build_params(rel_key, rel_val, max_res):
             p = {rel_key: rel_val, "md": "srf", "max": max_res}
             if topic:
-                p["topics"] = topic 
+                p["topics"] = topic
             return p
 
         tasks = []
@@ -337,48 +513,48 @@ async def get_words(word: str, query_type: str, sub_type: str = "Perfect", sylla
         elif sub_type == "Near":
             tasks.append(fetch_datamuse(build_params("rel_nry", word_lower, 150)))
         elif sub_type == "Slant":
-            tasks.append(fetch_datamuse(build_params("rel_nry", word_lower, 100))) 
-            tasks.append(fetch_datamuse(build_params("rel_cns", word_lower, 100))) 
+            tasks.append(fetch_datamuse(build_params("rel_nry", word_lower, 100)))
+            tasks.append(fetch_datamuse(build_params("rel_cns", word_lower, 100)))
         elif sub_type == "Consonant":
             tasks.append(fetch_datamuse(build_params("rel_cns", word_lower, 150)))
         results = await asyncio.gather(*tasks)
-        
+
         raw_words = {}
         for dataset in results:
             for item in dataset:
                 w = item.get("word", "").lower()
-                
+
                 if w == word_lower or len(w) <= 1: continue
                 if w == word_lower + "s" or w + "s" == word_lower: continue
                 if w == word_lower + "d" or w == word_lower + "ed" or w + "d" == word_lower: continue
-                
+
                 freq = 1.0
                 tags = item.get("tags", [])
                 for tag in tags:
                     if tag.startswith("f:"):
                         try: freq = float(tag.split(":")[1])
                         except ValueError: pass
-                        
+
                 if freq < 0.1: continue
-                
+
                 item_syl = item.get("numSyllables", 1)
                 if syllables and syllables > 0 and item_syl != syllables:
                     continue
-                    
+
                 if w not in raw_words:
                     dm_score = item.get("score", 0)
                     rhythm_modifier = 1.0
                     if not syllables or syllables == 0:
                         syl_diff = abs(item_syl - target_syl)
-                        if syl_diff == 1: rhythm_modifier = 0.85   
-                        elif syl_diff >= 2: rhythm_modifier = 0.65 
-                    
+                        if syl_diff == 1: rhythm_modifier = 0.85
+                        elif syl_diff >= 2: rhythm_modifier = 0.65
+
                     poetic_score = dm_score * math.log10(freq + 5) * rhythm_modifier
-                    
+
                     stress = get_stress_pattern(tags) if 'get_stress_pattern' in globals() else ""
-                    
+
                     raw_words[w] = {"word": w.capitalize(), "score": poetic_score, "stress": stress}
-                    
+
         sorted_words = sorted(raw_words.values(), key=lambda x: x["score"], reverse=True)
         return {"words": sorted_words[:60]}
 
@@ -400,10 +576,10 @@ async def get_words(word: str, query_type: str, sub_type: str = "Perfect", sylla
         m_map = {"Concept": "ml", "Family": "rel_trg", "Adjectives": "rel_jja"}
         param = m_map.get(query_type, "ml")
         data = await fetch_datamuse({param: word, "md": "sr", "max": 80})
-        
+
         if syllables and syllables > 0:
             data = [item for item in data if item.get('numSyllables') == syllables]
-            
+
         return {"words": [{"word": i['word'].capitalize(), "score": i.get('score', 0), "stress": get_stress_pattern(i.get("tags", [])) if 'get_stress_pattern' in globals() else ""} for i in data[:60]]}
 
 # ==================== ADVANCED PROCEDURAL CHORD ENGINE ====================
@@ -411,4 +587,3 @@ async def get_words(word: str, query_type: str, sub_type: str = "Perfect", sylla
 @app.post("/api/chords")
 async def get_chords(req: ChordRequest):
     return generate_chords(req.key, req.last_chord, req.jazz_mode)
-
