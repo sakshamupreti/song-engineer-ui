@@ -173,6 +173,27 @@ def generate_chords(key: str, last_chord: str, jazz_mode: bool) -> dict:
             elif last == f"{deg[3]}#dim7":
                 suggestions[f"{deg[4]}7"] = "Resolve up to V7"
 
+            # 🌌 ==========================================
+            # 🌌 MODAL INTERCHANGE RESOLUTIONS
+            # ==========================================
+            
+            # 1. Landing on bIIImaj7 (e.g., Ebmaj7 in C)
+            elif last == f"{get_note_by_interval(root, 3)}maj7":
+                suggestions[f"{deg[1]}m7"] = "Neo-Soul slide down (→ ii7)"
+                suggestions[f"{get_note_by_interval(root, 8)}maj7"] = "Cycle of 4ths (→ bVImaj7)"
+                suggestions[f"{deg[0]}maj7"] = "Chromatic Mediant (→ Imaj7)"
+
+            # 2. Landing on bVImaj7 (e.g., Abmaj7 in C)
+            elif last == f"{get_note_by_interval(root, 8)}maj7":
+                suggestions[f"{get_note_by_interval(root, 10)}7"] = "The 'Mario' Cadence (→ bVII7)"
+                suggestions[f"{deg[4]}7"] = "Half-step down to Dominant (→ V7)"
+                suggestions[f"{deg[0]}maj7"] = "Plagal chromatic resolve (→ Imaj7)"
+
+            # 3. Landing on bVII7 (e.g., Bb7 in C)
+            elif last == f"{get_note_by_interval(root, 10)}7":
+                suggestions[f"{deg[0]}maj7"] = "Backdoor Resolution home (→ Imaj7)"
+                suggestions[f"{deg[2]}m7"] = "Deceptive lift (→ iii7)"
+
         else:
             palette.extend([
                 {"name": f"{deg[0]}m7", "roman": "im7", "group": "Diatonic 7ths"},

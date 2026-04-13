@@ -254,7 +254,7 @@ function App() {
     const fetchPalette = async () => {
       try {
         const chordMatches = lyrics.match(/\[([A-G][b#]?[a-zA-Z0-9]*[ø]?[7]?[b]?[5]?)\]/g);
-        let lastChord = "C"; 
+        let lastChord = projectKey.replace('m', ''); 
         if (chordMatches && chordMatches.length > 0) {
           const lastFullMatch = chordMatches[chordMatches.length - 1];
           lastChord = lastFullMatch.substring(1, lastFullMatch.length - 1);
