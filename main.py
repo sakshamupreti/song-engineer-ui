@@ -499,11 +499,30 @@ async def get_chords(req: ChordRequest):
 
         # Jazz suggestions logic (unchanged from your original)
         if last == f"{deg[5]}7":
-            suggestions[f"{deg[1]}m7"] = "Resolve to ii7"
-            suggestions[f"{deg[1]}m7b5"] = "Resolve to iiø7"
+            suggestions[f"{deg[1]}m7"] = "Resolve to ii7 (Cycle of Fifths)"
+            suggestions[f"{deg[1]}m7b5"] = "Resolve to iiø7 (Minor Context)"
             suggestions[f"{get_note_by_interval(root, 3)}7"] = "Tritone Sub (subV7/ii)"
-        # ... (all your other elif conditions for suggestions remain exactly as you had them)
+            # NEW: Backdoor Dominant
+            suggestions[f"{deg[3]}7"] = "Backdoor Resolution (bVII7 to I)"
+        
+        # --- SECONDARY DOMINANTS ---
+        # If the user is on the tonic, suggest ways to "travel" to other degrees
+        if last == root or last == f"{root}maj7":
+            suggestions[f"{deg[0]}7"] = "Secondary Dominant (V7/IV)"
+            suggestions[f"{deg[1]}7"] = "Secondary Dominant (V7/V)"
+            suggestions[f"{deg[2]}7"] = "Secondary Dominant (V7/vi)"
+            suggestions[f"{deg[5]}7"] = "Secondary Dominant (V7/ii)"
 
+        # --- MODAL INTERCHANGE (BORROWED FROM MINOR) ---
+        if last == root:
+            suggestions[f"{deg[3]}maj7"] = "Modal Interchange (bIIImaj7)"
+            suggestions[f"{deg[5]}maj7"] = "Modal Interchange (bVImaj7)"
+            suggestions[f"{deg[6]}maj7"] = "Modal Interchange (bVIImaj7)"
+
+        # --- THE JAZZ TURNAROUNDS ---
+        if last == f"{deg[1]}m7":
+            suggestions[f"{deg[4]}7"] = "ii-V connection (Standard)"
+            suggestions[f"{deg[4]}alt"] = "ii-V connection (Altered Tension)"
     return {
         "suggestions": suggestions,
         "full_palette": palette
