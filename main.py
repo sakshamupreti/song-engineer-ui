@@ -35,7 +35,20 @@ async def fetch_datamuse(params: dict):
 def get_article(word: str) -> str:
     if not word:
         return "a"
-    return "an" if word[0].lower() in "aeiou" else "a"
+    
+    word_lower = word.lower().strip()
+    
+    # Exceptions where 'u' or 'eu' sounds like 'y' (consonant sound)
+    u_exceptions = ("uni", "use", "uto", "eur", "eup", "one", "ufo")
+    if word_lower.startswith(u_exceptions):
+        return "a"
+        
+    # Exceptions where 'h' is silent (vowel sound)
+    h_exceptions = ("hour", "hon", "heir")
+    if word_lower.startswith(h_exceptions):
+        return "an"
+        
+    return "an" if word_lower[0] in "aeiou" else "a"
 
 def get_verb(word: str) -> str:
     word = word.lower().strip()
@@ -89,7 +102,6 @@ BORING_CONCEPTS = {
     "gain", "system", "level", "reason", "period"
 }
 
-# Words that are too abstract to serve as good metaphor source domains
 ABSTRACT_SOURCE_FILTER = {
     "feeling", "thought", "idea", "concept", "emotion", "belief", "sense",
     "notion", "quality", "state", "condition", "experience", "awareness",
@@ -116,7 +128,6 @@ BORING_VERBS = {
     "allow", "enable", "require", "contain", "form", "produce", "develop",
 }
 
-# Relational bridge nouns: (bridge_noun, label, explanation_template)
 RELATIONAL_BRIDGES = [
     ("weight",    "⚖️ PHYSICAL WEIGHT",   "Treating {q} as something that exerts downward bodily pressure."),
     ("shadow",    "🌑 SHADOW",            "Treating {q} as something that blocks light and casts darkness behind it."),
@@ -134,7 +145,6 @@ RELATIONAL_BRIDGES = [
     ("tide",      "🌊 RHYTHMIC FORCE",    "Treating {q} as a cyclical, irresistible natural movement."),
 ]
 
-# Which adjectives (from rel_jjb) activate which relational bridges
 ADJ_ACTIVATES = {
     "heavy":   ["weight", "gravity", "tide"],
     "dark":    ["shadow", "undertow", "residue"],
@@ -153,7 +163,29 @@ ADJ_ACTIVATES = {
     "hollow":  ["echo", "shadow", "threshold"],
 }
 
-# --- SMART METAPHOR ARTICLE ---
+# --- CENTRALIZED HELPER FUNCTIONS ---
+
+def is_valid_poetic_noun(item: dict, query_lower: str, hypernyms: set, min_freq: float = 0.5) -> bool:
+    """Centralized filter to ensure Datamuse returns high-quality, concrete nouns."""
+    word = item.get("word", "").lower().strip()
+    tags = item.get("tags", [])
+    
+    if not word or " " in word: return False
+    if "n" not in tags: return False
+    if word == query_lower: return False
+    if word in hypernyms: return False
+    if word in BORING_CONCEPTS: return False
+    if word in ABSTRACT_SOURCE_FILTER: return False
+    
+    freq = 1.0
+    for tag in tags:
+        if tag.startswith("f:"):
+            try: freq = float(tag.split(":")[1])
+            except ValueError: pass
+            
+    if freq < min_freq: return False
+    return True
+
 def get_metaphor_article(noun: str) -> str:
     if not noun:
         return ""
@@ -244,9 +276,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         hypernyms.update(BORING_CONCEPTS)
         verb = get_verb(query_lower)
 
-        # ================================================================
-        # 1. BASIC CONCEPTUAL METAPHORS  (from CONCEPTUAL_MAPPINGS — unchanged)
-        # ================================================================
+        # 1. BASIC CONCEPTUAL METAPHORS
         if query_lower in CONCEPTUAL_MAPPINGS:
             source_extension_results = results[3:]
             for i, source in enumerate(sources):
@@ -273,11 +303,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                                 "meaning": f"🌿 POETIC EXTENSION | Extending the '{source}' mapping further down to its structural component ('{word}')."
                             })
 
-        # ================================================================
-        # 2A. VERBAL METAPHORS  —  "Grief settles" / "Joy erupts"
-        # Filter rel_trg and ml results for verbs only. These are the
-        # most evocative metaphor type and were absent from the original.
-        # ================================================================
+        # 2A. VERBAL METAPHORS
         verb_tasks = [
             fetch_datamuse({"rel_trg": query_lower, "md": "p", "max": 50}),
             fetch_datamuse({"ml":      query_lower, "md": "p", "max": 30}),
@@ -301,26 +327,17 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
 
                 verb_candidates[word] = score
 
-        for vword, _score in sorted(verb_candidates.items(),
-                                    key=lambda x: x[1], reverse=True)[:10]:
+        for vword, _score in sorted(verb_candidates.items(), key=lambda x: x[1], reverse=True)[:10]:
             conjugated = conjugate_verb(vword)
             phrase = f"{query.capitalize()} {conjugated}"
             if phrase.lower() not in seen:
                 seen.add(phrase.lower())
                 formatted_phrases.append({
                     "text": phrase,
-                    "meaning": (
-                        f"⚡ VERBAL METAPHOR | Attributing the physical action '{vword}' "
-                        f"to '{query}' — animating the abstract as something that acts "
-                        f"and moves in the world."
-                    )
+                    "meaning": f"⚡ VERBAL METAPHOR | Attributing the physical action '{vword}' to '{query}' — animating the abstract as something that acts and moves in the world."
                 })
 
-        # ================================================================
-        # 2B. RELATIONAL / GENITIVE METAPHORS  —  "The weight of grief"
-        # Uses the concept's adjective profile to score and rank bridge
-        # nouns so the most semantically apt ones surface first.
-        # ================================================================
+        # 2B. RELATIONAL / GENITIVE METAPHORS
         adj_profile = {
             item["word"].lower()
             for item in results[1]
@@ -347,14 +364,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                     "meaning": f"{label} | {template.format(q=query_lower)}"
                 })
 
-        # ================================================================
-        # 2C. IMPROVED NOMINAL METAPHORS  —  "Grief is a wound"
-        # Replaces the old ontological block with:
-        #   - abstract source noun filter (main failure mode of rel_trg)
-        #   - frequency floor so rare/obscure nouns are excluded
-        #   - length penalty to reward short, imageable, concrete words
-        #   - rel_spc (hyponyms) added for more specific source domains
-        # ================================================================
+        # 2C. IMPROVED NOMINAL METAPHORS
         nominal_tasks = [
             fetch_datamuse({"rel_trg": query_lower, "md": "dpr", "max": 40}),
             fetch_datamuse({"rel_spc": query_lower, "md": "pr",  "max": 20}),
@@ -364,52 +374,27 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         nominal_candidates = {}
         for dataset in nominal_raw:
             for item in dataset:
-                word  = item.get("word", "").strip()
-                tags  = item.get("tags", [])
-                score = item.get("score", 0)
+                if is_valid_poetic_noun(item, query_lower, hypernyms, min_freq=0.5):
+                    word = item["word"].lower()
+                    score = item.get("score", 0)
+                    length_penalty = max(0, len(word) - 7) * 0.04
+                    concreteness_score = score * (1 - length_penalty)
 
-                if not word or " " in word:                 continue
-                if "n" not in tags:                         continue
-                if word.lower() == query_lower:             continue
-                if word.lower() in hypernyms:               continue
-                if word.lower() in BORING_CONCEPTS:         continue
-                if word.lower() in ABSTRACT_SOURCE_FILTER:  continue
+                    if concreteness_score >= 120:
+                        if word not in nominal_candidates:
+                            nominal_candidates[word] = (word, concreteness_score)
 
-                freq = 1.0
-                for tag in tags:
-                    if tag.startswith("f:"):
-                        try:    freq = float(tag.split(":")[1])
-                        except: pass
-
-                if freq < 0.5: continue
-
-                length_penalty = max(0, len(word) - 7) * 0.04
-                concreteness_score = score * (1 - length_penalty)
-
-                if concreteness_score < 120: continue
-
-                if word.lower() not in nominal_candidates:
-                    nominal_candidates[word.lower()] = (word, concreteness_score)
-
-        for _, (word, _score) in sorted(nominal_candidates.items(),
-                                        key=lambda x: x[1][1], reverse=True)[:12]:
+        for _, (word, _score) in sorted(nominal_candidates.items(), key=lambda x: x[1][1], reverse=True)[:12]:
             article = get_metaphor_article(word)
             phrase  = f"{query.capitalize()} {verb} {article}{word}"
             if phrase.lower() not in seen:
                 seen.add(phrase.lower())
                 formatted_phrases.append({
                     "text": phrase,
-                    "meaning": (
-                        f"🏛️ STRUCTURAL METAPHOR | Mapping the full ontological "
-                        f"structure of '{word.lower()}' onto '{query}' — its properties, "
-                        f"parts, and characteristic behaviours all become available "
-                        f"as ways of understanding the abstract."
-                    )
+                    "meaning": f"🏛️ STRUCTURAL METAPHOR | Mapping the full ontological structure of '{word}' onto '{query}'."
                 })
 
-        # ================================================================
-        # 3. POETIC ELABORATIONS  (unchanged)
-        # ================================================================
+        # 3. POETIC ELABORATIONS
         valid_adjectives = [
             item["word"].lower()
             for item in results[1]
@@ -443,7 +428,6 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         verb = get_verb(query_lower)
         sources = CONCEPTUAL_MAPPINGS.get(query_lower, {}).get("sources", [])
 
-        # Base data: trigger nouns + concept adjectives
         base_tasks = [
             fetch_datamuse({"rel_trg": query_lower, "md": "dp",  "max": 30}),
             fetch_datamuse({"rel_jjb": query_lower, "md": "p",   "max": 20}),
@@ -452,11 +436,10 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         trg_results = base_results[0]
         adj_results = base_results[1]
 
-        # ================================================================
-        # LAYER 1: CONCEPTUAL SIMILES  (from CONCEPTUAL_MAPPINGS — unchanged)
-        # ================================================================
+        # LAYER 1: CONCEPTUAL SIMILES
         for source in sources:
-            phrase = f"{query.capitalize()} {verb} like a {source}"
+            article = get_metaphor_article(source)
+            phrase = f"{query.capitalize()} {verb} like {article}{source}"
             if phrase.lower() not in seen:
                 seen.add(phrase.lower())
                 formatted_phrases.append({
@@ -464,12 +447,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                     "meaning": f"🧠 CONCEPTUAL SIMILE | Explicitly comparing '{query}' to the full structure of a {source}."
                 })
 
-        # ================================================================
-        # LAYER 2: VERB-MEDIATED SIMILES  —  "Grief falls like rain"
-        # The most natural simile pattern in song lyrics. Takes verbs from
-        # the concept's action profile, then finds the canonical physical
-        # noun that performs each action → "[X] [verbs] like [noun]"
-        # ================================================================
+        # LAYER 2: VERB-MEDIATED SIMILES
         sim_verb_tasks = [
             fetch_datamuse({"rel_trg": query_lower, "md": "p", "max": 50}),
             fetch_datamuse({"ml":      query_lower, "md": "p", "max": 30}),
@@ -490,11 +468,8 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                 if word not in sim_verb_candidates:
                     sim_verb_candidates[word] = score
 
-        top_sim_verbs = sorted(sim_verb_candidates.items(),
-                               key=lambda x: x[1], reverse=True)[:6]
+        top_sim_verbs = sorted(sim_verb_candidates.items(), key=lambda x: x[1], reverse=True)[:6]
 
-        # For each verb, find the canonical exemplar noun (the thing
-        # most strongly associated with performing that action)
         verb_exemplar_tasks = [
             fetch_datamuse({"rel_trg": vword, "md": "pr", "max": 10})
             for vword, _ in top_sim_verbs
@@ -504,40 +479,20 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         for i, (vword, _) in enumerate(top_sim_verbs):
             conjugated = conjugate_verb(vword)
             for item in verb_exemplar_results[i]:
-                noun = item.get("word", "").lower()
-                tags = item.get("tags", [])
-                freq = 1.0
-                for tag in tags:
-                    if tag.startswith("f:"):
-                        try:    freq = float(tag.split(":")[1])
-                        except: pass
-                if "n" not in tags:                              continue
-                if " " in noun:                                  continue
-                if noun == query_lower:                          continue
-                if noun in BORING_CONCEPTS:                      continue
-                if noun in ABSTRACT_SOURCE_FILTER:               continue
-                if freq < 0.5:                                   continue
+                if is_valid_poetic_noun(item, query_lower, set(), min_freq=0.5):
+                    noun = item["word"].lower()
+                    article = get_article(noun)
+                    phrase = f"{query.capitalize()} {conjugated} like {article} {noun}"
+                    
+                    if phrase.lower() not in seen:
+                        seen.add(phrase.lower())
+                        formatted_phrases.append({
+                            "text": phrase.replace("  ", " "),
+                            "meaning": f"🎵 VERB-MEDIATED SIMILE | The action '{vword}' links '{query}' to its physical counterpart '{noun}'."
+                        })
+                    break 
 
-                article = get_article(noun)
-                phrase = f"{query.capitalize()} {conjugated} like {article}{noun}"
-                if phrase.lower() not in seen:
-                    seen.add(phrase.lower())
-                    formatted_phrases.append({
-                        "text": phrase,
-                        "meaning": (
-                            f"🎵 VERB-MEDIATED SIMILE | The action '{vword}' links "
-                            f"'{query}' to its physical counterpart '{noun}' — "
-                            f"comparing by behaviour, not just identity."
-                        )
-                    })
-                break  # one strong exemplar per verb keeps output tight
-
-        # ================================================================
-        # LAYER 3: "AS [ADJ] AS [NOUN]" SIMILES  —  "As cold as stone"
-        # The original generated "As grief as heavy" (broken — query is
-        # never an adjective). Fixed: take the concept's adjective profile,
-        # find the concrete noun that best embodies each adj at its extreme.
-        # ================================================================
+        # LAYER 3: "AS [ADJ] AS [NOUN]" SIMILES
         strong_adjs = [
             item["word"].lower()
             for item in adj_results
@@ -556,38 +511,21 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         for i, exemplar_data in enumerate(adj_exemplar_results):
             adj = strong_adjs[i]
             for item in exemplar_data:
-                noun = item.get("word", "").lower()
-                tags = item.get("tags", [])
-                freq = 1.0
-                for tag in tags:
-                    if tag.startswith("f:"):
-                        try:    freq = float(tag.split(":")[1])
-                        except: pass
-                if "n" not in tags:              continue
-                if " " in noun:                  continue
-                if noun == query_lower:          continue
-                if noun in BORING_CONCEPTS:      continue
-                if noun in ABSTRACT_SOURCE_FILTER: continue
-                if freq < 1.0:                   continue  # must be a common, imageable noun
+                if is_valid_poetic_noun(item, query_lower, set(), min_freq=1.0):
+                    noun = item["word"].lower()
+                    article = get_article(noun)
+                    # Corrected to a full independent clause!
+                    phrase = f"{query.capitalize()} {verb} as {adj} as {article} {noun}"
+                    
+                    if phrase.lower() not in seen:
+                        seen.add(phrase.lower())
+                        formatted_phrases.append({
+                            "text": phrase.replace("  ", " "),
+                            "meaning": f"📐 COMPARATIVE SIMILE | '{adj.capitalize()}' is a core quality of '{query}'; '{noun}' is its concrete embodiment."
+                        })
+                    break 
 
-                phrase = f"As {adj} as {noun}"
-                if phrase.lower() not in seen:
-                    seen.add(phrase.lower())
-                    formatted_phrases.append({
-                        "text": phrase.capitalize(),
-                        "meaning": (
-                            f"📐 COMPARATIVE SIMILE | '{adj.capitalize()}' is a core quality "
-                            f"of '{query}'; '{noun}' is its concrete embodiment at the extreme."
-                        )
-                    })
-                break  # one exemplar noun per adjective
-
-        # ================================================================
         # LAYER 4: SYNESTHETIC / SENSORY SIMILES
-        # "X sounds like silence", "X feels like weight"
-        # Cross-sensory comparisons are a hallmark of evocative song lyrics —
-        # they force the listener into a bodily, not just conceptual, response.
-        # ================================================================
         SENSE_VERBS   = ["sounds like", "feels like", "looks like", "tastes like", "smells like"]
         SENSE_QUERIES = [
             f"{query_lower} sound",
@@ -602,47 +540,24 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
 
         for i, sense_verb in enumerate(SENSE_VERBS):
             for item in sense_results[i]:
-                noun = item.get("word", "").lower()
-                tags = item.get("tags", [])
-                freq = 1.0
-                for tag in tags:
-                    if tag.startswith("f:"):
-                        try:    freq = float(tag.split(":")[1])
-                        except: pass
-                if "n" not in tags:              continue
-                if " " in noun:                  continue
-                if noun == query_lower:          continue
-                if noun in BORING_CONCEPTS:      continue
-                if noun in ABSTRACT_SOURCE_FILTER: continue
-                if freq < 0.5:                   continue
+                if is_valid_poetic_noun(item, query_lower, set(), min_freq=0.5):
+                    noun = item["word"].lower()
+                    article = get_article(noun)
+                    # BUG FIX: Removed the duplicate {verb} variable here!
+                    phrase = f"{query.capitalize()} {sense_verb} {article} {noun}"
+                    
+                    if phrase.lower() not in seen:
+                        seen.add(phrase.lower())
+                        formatted_phrases.append({
+                            "text": phrase.replace("  ", " "),
+                            "meaning": f"👁️ SYNESTHETIC SIMILE | Grounding '{query}' in sensory experience."
+                        })
+                    break 
 
-                article = get_metaphor_article(noun)
-                phrase = f"{query.capitalize()} {verb} {sense_verb} {article}{noun}"
-                if phrase.lower() not in seen:
-                    seen.add(phrase.lower())
-                    formatted_phrases.append({
-                        "text": phrase,
-                        "meaning": (
-                            f"👁️ SYNESTHETIC SIMILE | Grounding '{query}' in sensory "
-                            f"experience — comparing through {sense_verb.split()[0]}, "
-                            f"not just visual likeness."
-                        )
-                    })
-                break  # one per sense
-
-        # ================================================================
-        # LAYER 5: ELABORATED NOUN SIMILES  (replaces flat associative layer)
-        # Original: "Grief is like a wound"  (flat, no texture)
-        # New: enriches each source noun with its strongest poetic adjective
-        # → "Grief is like a silent wound", "Love is like a burning thread"
-        # ================================================================
+        # LAYER 5: ELABORATED NOUN SIMILES
         noun_candidates = [
             item for item in trg_results
-            if "n" in item.get("tags", [])
-            and " " not in item.get("word", "")
-            and item.get("word", "").lower() != query_lower
-            and item.get("word", "").lower() not in BORING_CONCEPTS
-            and item.get("word", "").lower() not in ABSTRACT_SOURCE_FILTER
+            if is_valid_poetic_noun(item, query_lower, set(), min_freq=0.0)
             and item.get("score", 0) > 150
         ][:8]
 
@@ -653,7 +568,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
         noun_adj_results = await asyncio.gather(*noun_adj_tasks) if noun_adj_tasks else []
 
         for i, noun_item in enumerate(noun_candidates):
-            noun    = noun_item["word"].lower()
+            noun = noun_item["word"].lower()
             adj_data = noun_adj_results[i] if i < len(noun_adj_results) else []
 
             poetic_adj = next(
@@ -666,21 +581,15 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
 
             article = get_article(noun)
             if poetic_adj:
-                phrase  = f"{query.capitalize()} {verb} like {article}{poetic_adj} {noun}"
-                meaning = (
-                    f"🔗 ELABORATED SIMILE | Comparing '{query}' to '{noun}', "
-                    f"sharpened with the quality '{poetic_adj}'."
-                )
+                phrase  = f"{query.capitalize()} {verb} like {article} {poetic_adj} {noun}"
+                meaning = f"🔗 ELABORATED SIMILE | Comparing '{query}' to '{noun}', sharpened with the quality '{poetic_adj}'."
             else:
-                phrase  = f"{query.capitalize()} {verb} like {article}{noun}"
-                meaning = (
-                    f"🔗 ASSOCIATIVE SIMILE | Likening '{query}' to the physical "
-                    f"presence of '{noun}'."
-                )
+                phrase  = f"{query.capitalize()} {verb} like {article} {noun}"
+                meaning = f"🔗 ASSOCIATIVE SIMILE | Likening '{query}' to the physical presence of '{noun}'."
 
             if phrase.lower() not in seen:
                 seen.add(phrase.lower())
-                formatted_phrases.append({"text": phrase, "meaning": meaning})
+                formatted_phrases.append({"text": phrase.replace("  ", " "), "meaning": meaning})
 
         return {"phrases": formatted_phrases}
 
