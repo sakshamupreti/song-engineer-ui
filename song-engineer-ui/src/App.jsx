@@ -359,20 +359,33 @@ function App() {
 
   // --- VOICE MEMO RECORDER ---
   const toggleRecording = async () => {
-    if (isRecording) { mediaRecorderRef.current.stop(); setIsRecording(false); } else {
+    if (isRecording) { 
+      mediaRecorderRef.current.stop(); 
+      setIsRecording(false); 
+    } else {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorderRef.current = new MediaRecorder(stream);
         audioChunksRef.current = [];
-        mediaRecorderRef.current.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+        
+        mediaRecorderRef.current.ondataavailable = (e) => { 
+          if (e.data.size > 0) audioChunksRef.current.push(e.data); 
+        };
+        
         mediaRecorderRef.current.onstop = () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          const reader = new FileReader(); reader.readAsDataURL(audioBlob);
+          // 🔑 THE FIX: Removed { type: 'audio/webm' }. The browser will now auto-select the correct format for the device.
+          const audioBlob = new Blob(audioChunksRef.current); 
+          const reader = new FileReader(); 
+          reader.readAsDataURL(audioBlob);
           reader.onloadend = () => setAudioData(reader.result);
           stream.getTracks().forEach(track => track.stop()); 
         };
-        mediaRecorderRef.current.start(); setIsRecording(true);
-      } catch (err) { alert("Microphone access denied or unavailable."); }
+        
+        mediaRecorderRef.current.start(); 
+        setIsRecording(true);
+      } catch (err) { 
+        alert("Microphone access denied. Please check your phone settings."); 
+      }
     }
   };
 
@@ -578,9 +591,28 @@ function App() {
         <div className="recording-bar">
           <button className={`record-btn ${isRecording ? 'recording' : ''}`} onClick={toggleRecording} title="Record Voice Memo">🎙️</button>
           {audioData && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <audio className="custom-audio-player" src={audioData} controls />
-              <button onClick={deleteRecording} style={{ background: 'transparent', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* Added a max-width so the audio player doesn't squash the delete button on small screens */}
+              <audio className="custom-audio-player" src={audioData} controls style={{ maxWidth: '140px' }} />
+              
+              {/* 🔑 THE FIX: A massive, easy-to-hit delete button with padding and a background */}
+              <button 
+                onClick={deleteRecording} 
+                style={{ 
+                  background: 'rgba(255, 59, 48, 0.1)', 
+                  border: '1px solid rgba(255, 59, 48, 0.5)', 
+                  color: '#ff3b30', 
+                  cursor: 'pointer', 
+                  fontSize: '1.2rem', 
+                  padding: '4px 14px', 
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ✕
+              </button>
             </div>
           )}
           <div style={{ borderLeft: '1px solid #444', height: '20px' }}></div>
