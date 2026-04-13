@@ -65,6 +65,9 @@ function App() {
   const [activeMenu, setActiveMenu] = useState(null);
   const [playMode, setPlayMode] = useState(false);
   const [bpm, setBpm] = useState(120);
+
+  // 🎸 NEW: Track the last chord clicked in Play Mode
+  const [lastPlayedChord, setLastPlayedChord] = useState(null);
   
   const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
   const [isDronePlaying, setIsDronePlaying] = useState(false);
@@ -285,28 +288,41 @@ function App() {
   useEffect(() => {
     const fetchPalette = async () => {
       try {
-        const chordMatches = lyrics.match(/\[([A-G][b#]?[a-zA-Z0-9]*[ø]?[7]?[b]?[5]?)\]/g);
+        // Default to the project key root
         let lastChord = projectKey.replace('m', ''); 
-        if (chordMatches && chordMatches.length > 0) {
-          const lastFullMatch = chordMatches[chordMatches.length - 1];
-          lastChord = lastFullMatch.substring(1, lastFullMatch.length - 1);
+
+        // 🎸 THE NEW LOGIC SWITCH
+        if (playMode && lastPlayedChord) {
+          // If we are jamming in Play Mode, base suggestions on the button we just clicked
+          lastChord = lastPlayedChord;
+        } else {
+          // If we are writing, scan the text editor for the last chord bracket
+          const chordMatches = lyrics.match(/\[([A-G][b#]?[a-zA-Z0-9]*[ø]?[7]?[b]?[5]?)\]/g);
+          if (chordMatches && chordMatches.length > 0) {
+            const lastFullMatch = chordMatches[chordMatches.length - 1];
+            lastChord = lastFullMatch.substring(1, lastFullMatch.length - 1);
+          }
         }
+
         const response = await fetch("https://song-engineer-ui-2.onrender.com/api/chords", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ last_chord: lastChord, key: projectKey, jazz_mode: jazzMode })
         });
+        
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
+        
         setPalette(data.full_palette || []); 
         setSuggestions(data.suggestions || {});
       } catch (err) {
-        console.error("Failed to fetch jazz palette:", err);
-        setPalette([{name: "C", roman: "I", group: "Diatonic"}]);
+        console.error("Failed to fetch palette:", err);
       }
     };
     fetchPalette();
-  }, [jazzMode, projectKey, (lyrics.match(/\[.*?\]/g) || []).length]);
+    
+  // 🎸 IMPORTANT: Added lastPlayedChord and playMode to the dependency array
+  }, [jazzMode, projectKey, (lyrics.match(/\[.*?\]/g) || []).length, lastPlayedChord, playMode]);
 
   useEffect(() => {
     if (searchWord.trim().length < 2) { setFoundWords(activeWordTool === "Imagery" ? {} : []); return; }
@@ -399,6 +415,9 @@ function App() {
     if (playMode) {
       const ctx = getAudioCtx(); if (ctx.state === 'suspended') ctx.resume();
       scheduleChord(chordName, ctx.currentTime, "block", bpm);
+      
+      // 🎸 NEW: Tell the engine what we just played!
+      setLastPlayedChord(chordName); 
     } else {
       insertAtCursor(`[${chordName}]`);
     }
