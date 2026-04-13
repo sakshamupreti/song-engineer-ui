@@ -638,8 +638,13 @@ function App() {
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEndEvent}
         >
+          {/* This pill shows on mobile, but is hidden on laptop */}
           <div className="drag-handle"></div>
-          <button className="close-btn" onClick={() => setActiveMenu(null)}>✕</button>
+
+          {/* This button only contains the X now */}
+          <button className="close-btn" onClick={() => setActiveMenu(null)}>
+            <span className="desktop-close-icon">✕</span>
+          </button>
           
           {activeMenu === 'palette' && (
             <div className="drawer-content">

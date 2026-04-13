@@ -217,6 +217,21 @@ header {
   height: calc(16px * 1.6) !important; /* Match the new math */
 }
 
+drag-handle {
+  display: none; /* Hidden on laptop */
+}
+
+.desktop-close-icon {
+  font-size: 1.2rem;
+  color: #666;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.desktop-close-icon:hover {
+  color: var(--primary);
+}
+
 /* --- SCROLLBAR POLISH --- */
 .editor-textarea::-webkit-scrollbar { width: 8px; height: 8px; }
 .editor-textarea::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
@@ -429,5 +444,11 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     border-radius: 5px;
     margin: -10px auto 15px auto;
     display: block;
+
+    /* Hide the Close Button (X) entirely on mobile */
+  .close-btn {
+    display: none !important;
+  }
+
   }
 }
