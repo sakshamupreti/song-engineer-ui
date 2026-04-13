@@ -121,6 +121,7 @@ def generate_chords(key: str, last_chord: str, jazz_mode: bool) -> dict:
                 {"name": f"{get_note_by_interval(root, 1)}7", "roman": "subV7/I", "group": "Tritone Substitutions"},
                 {"name": f"{get_note_by_interval(root, 3)}7", "roman": "subV7/ii", "group": "Tritone Substitutions"},
                 {"name": f"{get_note_by_interval(root, 6)}7", "roman": "subV7/IV", "group": "Tritone Substitutions"},
+                {"name": f"{deg[3]}7", "roman": "IV7", "group": "Modal Interchange"},
             ])
             palette.extend([
                 {"name": f"{root}#dim7", "roman": "#Idim7", "group": "Passing Chords"},
@@ -170,6 +171,24 @@ def generate_chords(key: str, last_chord: str, jazz_mode: bool) -> dict:
                 suggestions[f"{deg[0]}maj7"] = "Resolve down to Imaj7"
             elif last == f"{deg[3]}#dim7":
                 suggestions[f"{deg[4]}7"] = "Resolve up to V7"
+
+            # 🎸 --- Resolving the vi7 (e.g., Am7 in C) ---
+            elif last == f"{deg[5]}m7":
+                suggestions[f"{deg[1]}m7"] = "Cycle of 4ths (→ ii7)"
+                suggestions[f"{deg[5]}7"] = "Dominant Shift (Turn into V7/ii)"
+                suggestions[f"{deg[3]}maj7"] = "Diatonic step down (→ IVmaj7)"
+
+            # 🎸 --- Resolving the iii7 (e.g., Em7 in C) ---
+            elif last == f"{deg[2]}m7":
+                suggestions[f"{deg[5]}m7"] = "Cycle of 4ths (→ vi7)"
+                suggestions[f"{deg[2]}7"] = "Dominant Shift (Turn into V7/vi)"
+                suggestions[f"{deg[3]}maj7"] = "Deceptive half-step (→ IVmaj7)"
+
+            # 🎸 --- NEW: Resolving the IV7 (e.g., F7 in C) ---
+            elif last == f"{deg[3]}7":
+                suggestions[f"{deg[0]}maj7"] = "Blues Plagal resolve (→ Imaj7)"
+                suggestions[f"{deg[2]}m7"] = "Tritone Sub resolve (→ iii7)"
+                suggestions[f"{get_note_by_interval(root, 10)}7"] = "Cycle of 4ths (→ bVII7)"
 
             # 🌌 ==========================================
             # 🌌 MODAL INTERCHANGE RESOLUTIONS
