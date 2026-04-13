@@ -98,7 +98,13 @@ const FIGURES_OF_SPEECH = [
     desc: "Substituting the name of one object for another object closely associated with it.", 
     usage: "Makes abstract concepts highly tangible and saves valuable metric real estate in tight melodic lines.", 
     examples: ["'The suits are coming' (meaning corporate executives)", "'The pen is mightier than the sword'"] 
-  }
+  },
+  { 
+    name: "Synecdoche", 
+    desc: "A figure of speech where a specific part is used to represent the whole (or vice versa).", 
+    usage: "Focuses the listener on a highly specific, tangible detail rather than a generic object. It saves syllables and creates immediate visual grounding.", 
+    examples: ["'Got a new set of wheels' (meaning a car)", "'All hands on deck' (meaning the crew/people)"] 
+  },
 ];
 
 const PROMPT_LIBRARY = {
