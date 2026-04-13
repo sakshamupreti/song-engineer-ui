@@ -408,7 +408,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                 })
 
         # ================================================================
-        # 3. POETIC ELABORATIONS
+        # 3. POETIC ELABORATIONS  (unchanged)
         # ================================================================
         valid_adjectives = [
             item["word"].lower()
@@ -440,53 +440,247 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
 
     elif phrase_type == "Similes":
         seen = set()
-        tasks = [
-            fetch_datamuse({"rel_trg": query, "md": "dp", "max": 25}),
-            fetch_datamuse({"rel_jjb": query, "md": "p",  "max": 15})
-        ]
-        sources = CONCEPTUAL_MAPPINGS.get(query_lower, {}).get("sources", [])
-        results = await asyncio.gather(*tasks)
         verb = get_verb(query_lower)
+        sources = CONCEPTUAL_MAPPINGS.get(query_lower, {}).get("sources", [])
 
-        if sources:
-            for source in sources:
-                phrase = f"{query.capitalize()} {verb} like a {source}"
-                if phrase.lower() not in seen:
-                    seen.add(phrase.lower())
-                    formatted_phrases.append({
-                        "text": phrase,
-                        "meaning": f"🧠 CONCEPTUAL SIMILE | Explicitly comparing '{query}' to the structure of a {source}."
-                    })
-
-        for item in results[0]:
-            word = item.get("word", "")
-            tags = item.get("tags", [])
-            if "n" in tags and " " not in word and word.lower() != query_lower:
-                article = get_article(word)
-                phrase = f"{query.capitalize()} {verb} like {article}{word}"
-                if phrase.lower() not in seen:
-                    seen.add(phrase.lower())
-                    formatted_phrases.append({
-                        "text": phrase,
-                        "meaning": f"🔗 ASSOCIATIVE SIMILE | Likening the abstract concept of '{query}' to the physical presence of '{word}'."
-                    })
-
-        valid_adjectives = [
-            item["word"].lower()
-            for item in results[1]
-            if "adj" in item.get("tags", ["adj"])
-            and " " not in item["word"]
-            and item["word"].lower() not in UNPOETIC_ADJS
+        # Base data: trigger nouns + concept adjectives
+        base_tasks = [
+            fetch_datamuse({"rel_trg": query_lower, "md": "dp",  "max": 30}),
+            fetch_datamuse({"rel_jjb": query_lower, "md": "p",   "max": 20}),
         ]
+        base_results = await asyncio.gather(*base_tasks)
+        trg_results = base_results[0]
+        adj_results = base_results[1]
 
-        for adj in valid_adjectives[:12]:
-            phrase = f"As {query} as {adj}"
+        # ================================================================
+        # LAYER 1: CONCEPTUAL SIMILES  (from CONCEPTUAL_MAPPINGS — unchanged)
+        # ================================================================
+        for source in sources:
+            phrase = f"{query.capitalize()} {verb} like a {source}"
             if phrase.lower() not in seen:
                 seen.add(phrase.lower())
                 formatted_phrases.append({
-                    "text": phrase.capitalize(),
-                    "meaning": f"✨ DESCRIPTIVE SIMILE | Standard English simile comparing '{query}' to '{adj}'."
+                    "text": phrase,
+                    "meaning": f"🧠 CONCEPTUAL SIMILE | Explicitly comparing '{query}' to the full structure of a {source}."
                 })
+
+        # ================================================================
+        # LAYER 2: VERB-MEDIATED SIMILES  —  "Grief falls like rain"
+        # The most natural simile pattern in song lyrics. Takes verbs from
+        # the concept's action profile, then finds the canonical physical
+        # noun that performs each action → "[X] [verbs] like [noun]"
+        # ================================================================
+        sim_verb_tasks = [
+            fetch_datamuse({"rel_trg": query_lower, "md": "p", "max": 50}),
+            fetch_datamuse({"ml":      query_lower, "md": "p", "max": 30}),
+        ]
+        sim_verb_raw = await asyncio.gather(*sim_verb_tasks)
+
+        sim_verb_candidates = {}
+        for dataset in sim_verb_raw:
+            for item in dataset:
+                tags  = item.get("tags", [])
+                word  = item.get("word", "").lower().strip()
+                score = item.get("score", 0)
+                if "v" not in tags:      continue
+                if " " in word:          continue
+                if word == query_lower:  continue
+                if word in BORING_VERBS: continue
+                if score < 80:           continue
+                if word not in sim_verb_candidates:
+                    sim_verb_candidates[word] = score
+
+        top_sim_verbs = sorted(sim_verb_candidates.items(),
+                               key=lambda x: x[1], reverse=True)[:6]
+
+        # For each verb, find the canonical exemplar noun (the thing
+        # most strongly associated with performing that action)
+        verb_exemplar_tasks = [
+            fetch_datamuse({"rel_trg": vword, "md": "pr", "max": 10})
+            for vword, _ in top_sim_verbs
+        ]
+        verb_exemplar_results = await asyncio.gather(*verb_exemplar_tasks) if verb_exemplar_tasks else []
+
+        for i, (vword, _) in enumerate(top_sim_verbs):
+            conjugated = conjugate_verb(vword)
+            for item in verb_exemplar_results[i]:
+                noun = item.get("word", "").lower()
+                tags = item.get("tags", [])
+                freq = 1.0
+                for tag in tags:
+                    if tag.startswith("f:"):
+                        try:    freq = float(tag.split(":")[1])
+                        except: pass
+                if "n" not in tags:                              continue
+                if " " in noun:                                  continue
+                if noun == query_lower:                          continue
+                if noun in BORING_CONCEPTS:                      continue
+                if noun in ABSTRACT_SOURCE_FILTER:               continue
+                if freq < 0.5:                                   continue
+
+                article = get_article(noun)
+                phrase = f"{query.capitalize()} {conjugated} like {article}{noun}"
+                if phrase.lower() not in seen:
+                    seen.add(phrase.lower())
+                    formatted_phrases.append({
+                        "text": phrase,
+                        "meaning": (
+                            f"🎵 VERB-MEDIATED SIMILE | The action '{vword}' links "
+                            f"'{query}' to its physical counterpart '{noun}' — "
+                            f"comparing by behaviour, not just identity."
+                        )
+                    })
+                break  # one strong exemplar per verb keeps output tight
+
+        # ================================================================
+        # LAYER 3: "AS [ADJ] AS [NOUN]" SIMILES  —  "As cold as stone"
+        # The original generated "As grief as heavy" (broken — query is
+        # never an adjective). Fixed: take the concept's adjective profile,
+        # find the concrete noun that best embodies each adj at its extreme.
+        # ================================================================
+        strong_adjs = [
+            item["word"].lower()
+            for item in adj_results
+            if "adj" in item.get("tags", ["adj"])
+            and " " not in item["word"]
+            and item["word"].lower() not in UNPOETIC_ADJS
+            and item.get("score", 0) > 100
+        ][:10]
+
+        adj_exemplar_tasks = [
+            fetch_datamuse({"rel_jja": adj, "md": "pr", "max": 8})
+            for adj in strong_adjs
+        ]
+        adj_exemplar_results = await asyncio.gather(*adj_exemplar_tasks) if adj_exemplar_tasks else []
+
+        for i, exemplar_data in enumerate(adj_exemplar_results):
+            adj = strong_adjs[i]
+            for item in exemplar_data:
+                noun = item.get("word", "").lower()
+                tags = item.get("tags", [])
+                freq = 1.0
+                for tag in tags:
+                    if tag.startswith("f:"):
+                        try:    freq = float(tag.split(":")[1])
+                        except: pass
+                if "n" not in tags:              continue
+                if " " in noun:                  continue
+                if noun == query_lower:          continue
+                if noun in BORING_CONCEPTS:      continue
+                if noun in ABSTRACT_SOURCE_FILTER: continue
+                if freq < 1.0:                   continue  # must be a common, imageable noun
+
+                phrase = f"As {adj} as {noun}"
+                if phrase.lower() not in seen:
+                    seen.add(phrase.lower())
+                    formatted_phrases.append({
+                        "text": phrase.capitalize(),
+                        "meaning": (
+                            f"📐 COMPARATIVE SIMILE | '{adj.capitalize()}' is a core quality "
+                            f"of '{query}'; '{noun}' is its concrete embodiment at the extreme."
+                        )
+                    })
+                break  # one exemplar noun per adjective
+
+        # ================================================================
+        # LAYER 4: SYNESTHETIC / SENSORY SIMILES
+        # "X sounds like silence", "X feels like weight"
+        # Cross-sensory comparisons are a hallmark of evocative song lyrics —
+        # they force the listener into a bodily, not just conceptual, response.
+        # ================================================================
+        SENSE_VERBS   = ["sounds like", "feels like", "looks like", "tastes like", "smells like"]
+        SENSE_QUERIES = [
+            f"{query_lower} sound",
+            f"{query_lower} texture feel",
+            f"{query_lower} appearance look",
+            f"{query_lower} taste",
+            f"{query_lower} smell scent",
+        ]
+
+        sense_tasks   = [fetch_datamuse({"ml": q, "md": "pr", "max": 8}) for q in SENSE_QUERIES]
+        sense_results = await asyncio.gather(*sense_tasks)
+
+        for i, sense_verb in enumerate(SENSE_VERBS):
+            for item in sense_results[i]:
+                noun = item.get("word", "").lower()
+                tags = item.get("tags", [])
+                freq = 1.0
+                for tag in tags:
+                    if tag.startswith("f:"):
+                        try:    freq = float(tag.split(":")[1])
+                        except: pass
+                if "n" not in tags:              continue
+                if " " in noun:                  continue
+                if noun == query_lower:          continue
+                if noun in BORING_CONCEPTS:      continue
+                if noun in ABSTRACT_SOURCE_FILTER: continue
+                if freq < 0.5:                   continue
+
+                article = get_metaphor_article(noun)
+                phrase = f"{query.capitalize()} {verb} {sense_verb} {article}{noun}"
+                if phrase.lower() not in seen:
+                    seen.add(phrase.lower())
+                    formatted_phrases.append({
+                        "text": phrase,
+                        "meaning": (
+                            f"👁️ SYNESTHETIC SIMILE | Grounding '{query}' in sensory "
+                            f"experience — comparing through {sense_verb.split()[0]}, "
+                            f"not just visual likeness."
+                        )
+                    })
+                break  # one per sense
+
+        # ================================================================
+        # LAYER 5: ELABORATED NOUN SIMILES  (replaces flat associative layer)
+        # Original: "Grief is like a wound"  (flat, no texture)
+        # New: enriches each source noun with its strongest poetic adjective
+        # → "Grief is like a silent wound", "Love is like a burning thread"
+        # ================================================================
+        noun_candidates = [
+            item for item in trg_results
+            if "n" in item.get("tags", [])
+            and " " not in item.get("word", "")
+            and item.get("word", "").lower() != query_lower
+            and item.get("word", "").lower() not in BORING_CONCEPTS
+            and item.get("word", "").lower() not in ABSTRACT_SOURCE_FILTER
+            and item.get("score", 0) > 150
+        ][:8]
+
+        noun_adj_tasks = [
+            fetch_datamuse({"rel_jjb": item["word"].lower(), "md": "p", "max": 6})
+            for item in noun_candidates
+        ]
+        noun_adj_results = await asyncio.gather(*noun_adj_tasks) if noun_adj_tasks else []
+
+        for i, noun_item in enumerate(noun_candidates):
+            noun    = noun_item["word"].lower()
+            adj_data = noun_adj_results[i] if i < len(noun_adj_results) else []
+
+            poetic_adj = next(
+                (a["word"].lower() for a in adj_data
+                 if "adj" in a.get("tags", ["adj"])
+                 and a["word"].lower() not in UNPOETIC_ADJS
+                 and " " not in a["word"]),
+                None
+            )
+
+            article = get_article(noun)
+            if poetic_adj:
+                phrase  = f"{query.capitalize()} {verb} like {article}{poetic_adj} {noun}"
+                meaning = (
+                    f"🔗 ELABORATED SIMILE | Comparing '{query}' to '{noun}', "
+                    f"sharpened with the quality '{poetic_adj}'."
+                )
+            else:
+                phrase  = f"{query.capitalize()} {verb} like {article}{noun}"
+                meaning = (
+                    f"🔗 ASSOCIATIVE SIMILE | Likening '{query}' to the physical "
+                    f"presence of '{noun}'."
+                )
+
+            if phrase.lower() not in seen:
+                seen.add(phrase.lower())
+                formatted_phrases.append({"text": phrase, "meaning": meaning})
 
         return {"phrases": formatted_phrases}
 
