@@ -408,7 +408,7 @@ async def get_phrases(query: str = "", phrase_type: str = "Idioms"):
                 })
 
         # ================================================================
-        # 3. POETIC ELABORATIONS  (unchanged)
+        # 3. POETIC ELABORATIONS
         # ================================================================
         valid_adjectives = [
             item["word"].lower()
