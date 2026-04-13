@@ -149,12 +149,10 @@ def generate_chords(key: str, last_chord: str, jazz_mode: bool) -> dict:
                 suggestions[f"{deg[0]}maj7"] = "Resolution to I"
                 suggestions[f"{deg[5]}m7"] = "Deceptive Resolution (vi7)"
                 
+            # Removed the old bVII7 trigger here to avoid conflict with the new modal section below
             elif last == f"{deg[3]}maj7":
                 suggestions[f"{deg[3]}#dim7"] = "Ascending Diminished (→ V7)"
-                suggestions[f"{get_note_by_interval(root, 10)}7"] = "Backdoor Resolution (bVII7)"
-                
-            elif last == f"{get_note_by_interval(root, 10)}7":
-                suggestions[f"{deg[0]}maj7"] = "Backdoor Resolution home"
+                suggestions[f"{get_note_by_interval(root, 10)}7"] = "Backdoor Setup (bVII7)"
                 
             elif last == f"{deg[5]}7":
                 suggestions[f"{deg[1]}m7"] = "Resolve to ii7"
