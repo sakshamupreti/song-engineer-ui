@@ -365,6 +365,11 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     overflow: hidden !important;
   }
 
+  /* 📱 THE FIX: Hide the gutter completely on phones */
+  .syllable-gutter {
+    display: none !important;
+  }
+
   .side-nav {
     order: 99; 
     position: relative !important; 

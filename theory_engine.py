@@ -57,8 +57,8 @@ def generate_chords(key: str, last_chord: str, jazz_mode: bool) -> dict:
                 
             # --- NEW: RESOLVING THE POP DOMINANTS ---
             elif last == f"{deg[2]}7": # III7 (e.g., E7 in Key of C)
-                suggestions[f"{deg[5]}m"] = "Radiohead 'Creep' resolve (→ vi)"
-                suggestions[deg[3]] = "Deceptive Major lift (→ IV)"
+                suggestions[f"{deg[5]}m"] = "Natural resolve to minor (→ vi)"
+                suggestions[deg[3]] = "Radiohead 'Creep' resolve (→ IV)"
             elif last == f"{deg[1]}7": # II7 (e.g., D7 in Key of C)
                 suggestions[deg[4]] = "Gospel/Country lift (→ V)"
             elif last == f"{deg[0]}7": # I7 (e.g., C7 in Key of C)
