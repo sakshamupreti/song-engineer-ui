@@ -360,6 +360,10 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 .gutter-target { color: #121212; font-size: 0.8rem; letter-spacing: 2px; }
 .word-stress { color: #eab308; font-size: 0.75rem; margin-left: 6px; letter-spacing: 1px; opacity: 0.8; }
 
+/* =========================================
+   MOBILE UI RESPONSIVE ARCHITECTURE
+========================================= */
+
 @media (max-width: 768px) {
   header {
     flex-direction: column !important;
@@ -370,54 +374,52 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
   
   .song-title-container { width: 100% !important; margin: 0 !important; }
 
-  /* 📱 SHARED TOOLBAR SETTINGS */
+  /* 📱 SWIPEABLE TOOLBAR FIX */
   .metronome-bar, .recording-bar {
     width: 100%;
-    flex-wrap: nowrap !important; 
-    overflow-x: auto !important; 
-    -webkit-overflow-scrolling: touch; 
-    scrollbar-width: none; 
-    padding: 6px 5px !important; 
-    gap: 6px !important; 
+    justify-content: flex-start !important; /* Aligns left so swiping works correctly */
+    flex-wrap: nowrap !important; /* 🔑 Prevents the metronome from getting pushed down */
+    overflow-x: auto !important; /* Enables horizontal swiping */
+    -webkit-overflow-scrolling: touch; /* Buttery smooth iOS scrolling */
+    scrollbar-width: none; /* Hides the ugly scrollbar */
+    padding: 6px 15px !important; 
+    gap: 12px !important;
     box-sizing: border-box !important;
   }
 
-  .metronome-bar::-webkit-scrollbar, 
-  .recording-bar::-webkit-scrollbar {
-    display: none !important;
+  /* 📱 Squeeze the recording bar gaps */
+  .metronome-bar, .recording-bar {
+    gap: 6px !important; /* Reduced from 12px */
+    padding: 6px 5px !important; 
   }
 
-  /* 📱 ALIGNMENT LOGIC */
-  .metronome-bar {
-    justify-content: center !important; /* Always centered */
-  }
-
-  .recording-bar {
-    justify-content: flex-start !important; /* Default to left for swiping */
-  }
-
-  /* 🎯 SMART CENTER: Centered when empty, slides left when audio exists */
-  .recording-bar .record-btn:only-child {
-    margin: 0 auto !important;
-  }
-
-  /* 📱 ELEMENT CRUSHING (Save Space) */
+  /* 📱 Crush the native audio player to its absolute minimum */
   .custom-audio-player {
-    width: 110px !important; 
+    width: 110px !important; /* Forces the browser to drop the empty space */
     height: 28px !important;
   }
 
+  /* 📱 Shrink the delete button */
   .audio-delete-btn {
     padding: 4px 8px !important;
     font-size: 1rem !important;
-    flex-shrink: 0 !important;
   }
 
+  /* 📱 Slightly shrink the metronome slider to save room */
   .recording-bar input[type="range"] {
     width: 50px !important;
   }
   
-  /* 📱 MAIN LAYOUT & EDITOR */
+  /* 📱 Center the Metronome permanently (it always fits) */
+  .metronome-bar {
+    justify-content: center !important;
+  }
+
+  /* 📱 Center the Microphone ONLY when nothing is recorded */
+  .recording-bar .record-btn:only-child {
+    margin: 0 auto !important;
+  }
+
   .main-layout {
     display: flex !important;
     flex-direction: column !important;
@@ -426,27 +428,23 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     overflow: hidden !important;
   }
 
+  /* 📱 THE FIX: Hide the gutter completely on phones */
   .syllable-gutter {
     display: none !important;
   }
 
-  .editor-container {
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: row !important; 
-    background: #161616;
-    overflow: hidden !important; 
-  }
-
-  /* 📱 NAVIGATION & DRAWER */
   .side-nav {
     order: 99; 
     position: relative !important; 
+    bottom: auto !important;
+    top: auto !important;
     width: 100% !important;
     height: 45px !important; 
     flex-direction: row !important;
     background: #0f172a !important;
     border-top: 1px solid #1e293b !important; 
+    border-bottom: none !important;
+    flex-shrink: 0 !important; 
     z-index: 200 !important; 
     overflow-x: auto;
     scrollbar-width: none;
@@ -456,11 +454,23 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
 
   .nav-btn { height: 35px !important; width: 35px !important; font-size: 1rem !important; }
 
+  .editor-container {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: row !important; 
+    position: relative !important;
+    background: #161616;
+    overflow: hidden !important; 
+    min-width: 0 !important;  
+    min-height: 0 !important; 
+  }
+
   .drawer {
     position: fixed;
     bottom: 45px; 
     left: 0;
     right: 0;
+    top: auto;
     width: 100%;
     height: 60vh;
     z-index: 100 !important; 
@@ -469,11 +479,12 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-radius: 20px 20px 0 0;
     border-top: 1px solid #333;
+    border-left: none;
   }
 
   .drawer.open { transform: translateY(0); }
 
-  /* 📱 OVERLAY & HANDLES */
+  /* 1. Force the Overlay to cover the entire screen and catch taps */
   .drawer-overlay {
     display: block !important;
     position: fixed !important;
@@ -483,8 +494,23 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     height: 100vh !important;
     background: rgba(0, 0, 0, 0.6) !important;
     z-index: 90 !important; 
+    cursor: pointer !important;
   }
 
+  /* 2. Annihilate the X button on mobile */
+  button.close-btn,
+  .close-btn {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* 3. Ensure the drag handle still looks good */
   .drag-handle {
     display: block !important;
     width: 40px !important;
@@ -492,10 +518,5 @@ input[type="text"], input[type="number"], select { background: #2a2a2a; border: 
     background: #444 !important;
     border-radius: 5px !important;
     margin: 0 auto 15px auto !important;
-  }
-
-  /* 📱 KILL SWITCHES */
-  button.close-btn, .close-btn {
-    display: none !important;
   }
 }
