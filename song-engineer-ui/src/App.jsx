@@ -198,7 +198,6 @@ function App() {
     const isDownSwipe = distance > minSwipeDistance;
     
     // Safety check: Only swipe-close if the drawer content is scrolled to the top
-    // (This prevents accidental closing while reading a long list of words)
     const isAtTop = drawerRef.current ? drawerRef.current.scrollTop <= 0 : true;
 
     if (isDownSwipe && isAtTop) {
@@ -267,6 +266,13 @@ function App() {
     gain.connect(ctx.destination);
     osc.start(startTime);
     osc.stop(startTime + duration);
+  };
+
+  // --- FIGURES OF SPEECH ACCORDION STATE ---
+  const [expandedFigure, setExpandedFigure] = useState(null);
+
+  const toggleFigure = (name) => {
+    setExpandedFigure(expandedFigure === name ? null : name);
   };
 
   const toggleDrone = () => {
@@ -365,15 +371,11 @@ function App() {
   useEffect(() => {
     const fetchPalette = async () => {
       try {
-        // Default to the project key root
         let lastChord = projectKey.replace('m', ''); 
 
-        // 🎸 THE NEW LOGIC SWITCH
         if (playMode && lastPlayedChord) {
-          // If we are jamming in Play Mode, base suggestions on the button we just clicked
           lastChord = lastPlayedChord;
         } else {
-          // If we are writing, scan the text editor for the last chord bracket
           const chordMatches = lyrics.match(/\[([A-G][b#]?[a-zA-Z0-9]*[ø]?[7]?[b]?[5]?)\]/g);
           if (chordMatches && chordMatches.length > 0) {
             const lastFullMatch = chordMatches[chordMatches.length - 1];
@@ -397,8 +399,6 @@ function App() {
       }
     };
     fetchPalette();
-    
-  // 🎸 IMPORTANT: Added lastPlayedChord and playMode to the dependency array
   }, [jazzMode, projectKey, (lyrics.match(/\[.*?\]/g) || []).length, lastPlayedChord, playMode]);
 
   useEffect(() => {
@@ -435,7 +435,6 @@ function App() {
   };
 
   // --- VOICE MEMO RECORDER ---
-  // --- VOICE MEMO RECORDER ---
   const toggleRecording = async () => {
     if (isRecording) { 
       mediaRecorderRef.current.stop(); 
@@ -451,10 +450,7 @@ function App() {
         };
         
         mediaRecorderRef.current.onstop = () => {
-          // 🔑 THE FIX: Dynamically ask the browser what format it used (WebM for Chrome, MP4 for iOS)
           const browserFormat = mediaRecorderRef.current.mimeType;
-          
-          // Apply that exact format label to the final audio file
           const audioBlob = new Blob(audioChunksRef.current, { type: browserFormat }); 
           
           const reader = new FileReader(); 
@@ -510,8 +506,6 @@ function App() {
     if (playMode) {
       const ctx = getAudioCtx(); if (ctx.state === 'suspended') ctx.resume();
       scheduleChord(chordName, ctx.currentTime, "block", bpm);
-      
-      // 🎸 NEW: Tell the engine what we just played!
       setLastPlayedChord(chordName); 
     } else {
       insertAtCursor(`[${chordName}]`);
@@ -603,9 +597,8 @@ function App() {
     return () => clearInterval(metronomeInterval.current);
   }, [isMetronomePlaying, bpm]);
 
-  // --- THE NEW SCROLL SYNC ENGINE ---
+  // --- SCROLL SYNC ENGINE ---
   const handleScroll = () => {
-    // Listen to the textarea again!
     if (!editorRef.current) return;
 
     const currentScrollTop = editorRef.current.scrollTop;
@@ -712,7 +705,7 @@ function App() {
             <textarea
               className="editor-textarea"
               ref={editorRef}
-              onScroll={handleScroll} /* <--- MOVED BACK HERE */
+              onScroll={handleScroll}
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
               onSelect={handleSelection}
@@ -757,10 +750,7 @@ function App() {
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEndEvent}
         >
-          {/* This pill shows on mobile, but is hidden on laptop */}
           <div className="drag-handle"></div>
-
-          {/* 🚨 Cleaned button: No inline styles allowed here! */}
           <button className="close-btn" onClick={() => setActiveMenu(null)}>
             <span className="desktop-close-icon">✕</span>
           </button>
@@ -933,16 +923,61 @@ function App() {
             </div>
           )}
 
+          {/* 🎸 INTEGRATED ACCORDION UPDATE HERE */}
           {activeMenu === 'figures' && (
             <div className="drawer-content">
               <h3>Figures of Speech</h3>
-              <div className="song-list">
-                {FIGURES_OF_SPEECH.map((fig, i) => (
-                  <div key={i} className="phrase-card" onClick={() => insertAtCursor(`\n[Try using ${fig.name} here]\n`)}>
-                    <span className="phrase-text" style={{color: '#3b82f6'}}>{fig.name}</span>
-                    <span className="phrase-meaning" style={{marginBottom: '8px'}}>{fig.desc}</span>
-                  </div>
-                ))}
+              <div className="sense-group" style={{ borderTop: 'none', paddingTop: 0 }}>
+                <span className="sense-label-minimal" style={{ marginBottom: '15px' }}>Lyrical Devices</span>
+                
+                <div className="figures-list">
+                  {FIGURES_OF_SPEECH.map((fos) => (
+                    <div 
+                      key={fos.name} 
+                      className={`figure-card ${expandedFigure === fos.name ? 'expanded' : ''}`}
+                      onClick={() => toggleFigure(fos.name)}
+                    >
+                      <div className="figure-header">
+                        <span className="figure-name">{fos.name}</span>
+                        {/* Changes from a plus to a minus when open */}
+                        <span className="expand-icon">{expandedFigure === fos.name ? '−' : '+'}</span>
+                      </div>
+                      
+                      <span className="figure-desc">{fos.desc}</span>
+                      
+                      {/* 🔽 THIS SECTION ONLY RENDERS IF CLICKED 🔽 */}
+                      {expandedFigure === fos.name && (
+                        <div className="figure-details" onClick={(e) => {
+                          e.stopPropagation(); // Prevents the accordion from closing when trying to copy text
+                        }}>
+                          <div className="detail-section">
+                            <strong>The Impact:</strong>
+                            <p>{fos.usage}</p>
+                          </div>
+                          <div className="detail-section">
+                            <strong>Examples:</strong>
+                            <ul>
+                              {fos.examples.map((ex, i) => (
+                                <li key={i} className="example-text">{ex}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          {/* Dedicated Insert button for clarity */}
+                          <button 
+                            className="magic-btn" 
+                            style={{marginTop: '10px', width: '100%', padding: '8px'}} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              insertAtCursor(`\n[Try using ${fos.name} here]\n`);
+                            }}
+                          >
+                            + Insert Reminder
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

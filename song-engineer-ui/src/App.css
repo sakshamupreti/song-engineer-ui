@@ -243,6 +243,103 @@ header {
   color: var(--primary);
 }
 
+/* --- FIGURES OF SPEECH ACCORDION --- */
+.figure-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.figure-card:hover {
+  border-color: var(--primary);
+  background: rgba(255, 75, 75, 0.05);
+}
+
+/* When the card is clicked open */
+.figure-card.expanded {
+  border-color: var(--accent-blue);
+  background: rgba(0, 150, 255, 0.05);
+}
+
+.figure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.figure-name {
+  font-weight: 700;
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.expand-icon {
+  color: #888;
+  font-weight: bold;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.figure-desc {
+  display: block;
+  font-size: 0.65rem;
+  color: #888;
+  line-height: 1.4;
+}
+
+/* The hidden details that slide down */
+.figure-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  animation: slideDownFade 0.3s ease-out forwards;
+}
+
+.detail-section {
+  margin-bottom: 10px;
+}
+
+.detail-section strong {
+  display: block;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--accent-blue);
+  margin-bottom: 4px;
+}
+
+.detail-section p {
+  font-size: 0.75rem;
+  color: #ccc;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.detail-section ul {
+  margin: 0;
+  padding-left: 15px;
+  color: #fff;
+}
+
+.example-text {
+  font-size: 0.75rem;
+  font-family: 'Courier New', Courier, monospace;
+  color: #eab308; /* A nice yellow string color to make examples pop */
+  margin-bottom: 4px;
+  font-style: italic;
+}
+
+/* Smooth reveal animation */
+@keyframes slideDownFade {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* --- SCROLLBAR POLISH --- */
 .editor-textarea::-webkit-scrollbar { width: 8px; height: 8px; }
 .editor-textarea::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
