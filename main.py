@@ -430,6 +430,9 @@ async def get_chords(req: ChordRequest):
     last = req.last_chord
 
     if not jazz:
+        # ==========================================
+        # 🎸 STANDARD POP / ROCK ENGINE
+        # ==========================================
         if not is_minor:
             palette = [
                 {"name": deg[0], "roman": "I", "group": "Diatonic"},
@@ -442,9 +445,15 @@ async def get_chords(req: ChordRequest):
                 {"name": f"{deg[3]}m", "roman": "iv", "group": "Borrowed"}
             ]
             
-            if last == deg[4]: suggestions[deg[0]] = "Perfect Cadence (Home)"
-            elif last == deg[3]: suggestions[deg[4]] = "Build tension to V"
-            elif last == f"{deg[5]}m": suggestions[deg[3]] = "Classic pop movement (vi -> IV)"
+            # Pop Suggestions
+            if last == deg[4]: 
+                suggestions[deg[0]] = "Perfect Cadence (Home)"
+                suggestions[f"{deg[5]}m"] = "Deceptive Cadence (vi)"
+            elif last == deg[3]: 
+                suggestions[deg[4]] = "Build tension to V"
+                suggestions[deg[0]] = "Plagal Cadence (Home)"
+            elif last == f"{deg[5]}m": 
+                suggestions[deg[3]] = "Classic pop movement (vi -> IV)"
         else:
             palette = [
                 {"name": f"{deg[0]}m", "roman": "i", "group": "Diatonic"},
@@ -455,8 +464,18 @@ async def get_chords(req: ChordRequest):
                 {"name": deg[6], "roman": "VII", "group": "Diatonic"},
                 {"name": get_note_by_interval(root, 7), "roman": "V", "group": "Harmonic Minor"}
             ]
+            
+            # Minor Pop Suggestions
+            v_chord = get_note_by_interval(root, 7)
+            if last == v_chord:
+                suggestions[f"{deg[0]}m"] = "Perfect Minor Cadence"
+            elif last == f"{deg[3]}m":
+                suggestions[v_chord] = "Minor tension to V"
+
     else:
-        # Jazz mode code (unchanged from your original)
+        # ==========================================
+        # 🎷 ADVANCED JAZZ HARMONY ENGINE
+        # ==========================================
         if not is_minor:
             palette.extend([
                 {"name": f"{deg[0]}maj7", "roman": "Imaj7", "group": "Diatonic 7ths"},
@@ -468,21 +487,56 @@ async def get_chords(req: ChordRequest):
                 {"name": f"{deg[6]}m7b5", "roman": "viiø7", "group": "Diatonic 7ths"},
             ])
             palette.extend([
-                {"name": f"{deg[5]}7", "roman": "V7/ii (A7)", "group": "Secondary Dominants"},
-                {"name": f"{deg[6]}7", "roman": "V7/iii (B7)", "group": "Secondary Dominants"},
-                {"name": f"{deg[0]}7", "roman": "V7/IV (C7)", "group": "Secondary Dominants"},
-                {"name": f"{deg[1]}7", "roman": "V7/V (D7)", "group": "Secondary Dominants"},
-                {"name": f"{deg[2]}7", "roman": "V7/vi (E7)", "group": "Secondary Dominants"},
+                {"name": f"{deg[5]}7", "roman": "V7/ii", "group": "Secondary Dominants"},
+                {"name": f"{deg[6]}7", "roman": "V7/iii", "group": "Secondary Dominants"},
+                {"name": f"{deg[0]}7", "roman": "V7/IV", "group": "Secondary Dominants"},
+                {"name": f"{deg[1]}7", "roman": "V7/V", "group": "Secondary Dominants"},
+                {"name": f"{deg[2]}7", "roman": "V7/vi", "group": "Secondary Dominants"},
             ])
             palette.extend([
-                {"name": f"{get_note_by_interval(root, 1)}7", "roman": "subV7/I (Db7)", "group": "Tritone Substitutions"},
-                {"name": f"{get_note_by_interval(root, 3)}7", "roman": "subV7/ii (Eb7)", "group": "Tritone Substitutions"},
-                {"name": f"{get_note_by_interval(root, 6)}7", "roman": "subV7/IV (Gb7)", "group": "Tritone Substitutions"},
-                {"name": f"{get_note_by_interval(root, 8)}7", "roman": "subV7/V (Ab7)", "group": "Tritone Substitutions"},
-                {"name": f"{get_note_by_interval(root, 10)}7", "roman": "subV7/vi (Bb7)", "group": "Tritone Substitutions"},
+                {"name": f"{get_note_by_interval(root, 1)}7", "roman": "subV7/I", "group": "Tritone Substitutions"},
+                {"name": f"{get_note_by_interval(root, 3)}7", "roman": "subV7/ii", "group": "Tritone Substitutions"},
+                {"name": f"{get_note_by_interval(root, 6)}7", "roman": "subV7/IV", "group": "Tritone Substitutions"},
             ])
+            palette.extend([
+                {"name": f"{root}#dim7", "roman": "#Idim7", "group": "Passing Chords"},
+                {"name": f"{deg[2]}bdim7", "roman": "bIIIdim7", "group": "Passing Chords"},
+                {"name": f"{deg[3]}#dim7", "roman": "#IVdim7", "group": "Passing Chords"},
+            ])
+            palette.extend([
+                {"name": f"{get_note_by_interval(root, 10)}7", "roman": "bVII7", "group": "Modal Interchange"},
+                {"name": f"{get_note_by_interval(root, 3)}maj7", "roman": "bIIImaj7", "group": "Modal Interchange"},
+                {"name": f"{get_note_by_interval(root, 8)}maj7", "roman": "bVImaj7", "group": "Modal Interchange"},
+            ])
+
+            # --- JAZZ SUGGESTIONS ALGORITHM ---
+            if last == f"{deg[0]}maj7" or last == root:
+                suggestions[f"{deg[1]}m7"] = "Standard ii movement"
+                suggestions[f"{deg[5]}7"] = "Secondary Dominant (V7/ii)"
+                suggestions[f"{root}#dim7"] = "Ascending Diminished (→ ii7)"
+                suggestions[f"{get_note_by_interval(root, 3)}maj7"] = "Modal Interchange (bIIImaj7)"
+                
+            elif last == f"{deg[1]}m7":
+                suggestions[f"{deg[4]}7"] = "ii-V connection"
+                suggestions[f"{get_note_by_interval(root, 1)}7"] = "Tritone Sub of V (subV7/I)"
+                suggestions[f"{deg[2]}bdim7"] = "Descending Diminished (→ I)"
+                
+            elif last == f"{deg[4]}7":
+                suggestions[f"{deg[0]}maj7"] = "Resolution to I"
+                suggestions[f"{deg[5]}m7"] = "Deceptive Resolution (vi7)"
+                
+            elif last == f"{deg[3]}maj7":
+                suggestions[f"{deg[3]}#dim7"] = "Ascending Diminished (→ V7)"
+                suggestions[f"{get_note_by_interval(root, 10)}7"] = "Backdoor Resolution (bVII7)"
+                
+            elif last == f"{get_note_by_interval(root, 10)}7":
+                suggestions[f"{deg[0]}maj7"] = "Backdoor Resolution home"
+                
+            elif last == f"{deg[5]}7":
+                suggestions[f"{deg[1]}m7"] = "Resolve to ii7"
+                suggestions[f"{get_note_by_interval(root, 3)}7"] = "Tritone Sub (subV7/ii)"
+
         else:
-            # Minor Jazz code (unchanged)
             palette.extend([
                 {"name": f"{deg[0]}m7", "roman": "im7", "group": "Diatonic 7ths"},
                 {"name": f"{deg[1]}m7b5", "roman": "iiø7", "group": "Diatonic 7ths"},
@@ -496,13 +550,18 @@ async def get_chords(req: ChordRequest):
                 {"name": f"{get_note_by_interval(root, 1)}maj7", "roman": "bIImaj7", "group": "Tritone Substitutions"},
                 {"name": f"{get_note_by_interval(root, 1)}7", "roman": "subV7/i", "group": "Tritone Substitutions"}
             ])
-
-        # Jazz suggestions logic (unchanged from your original)
-        if last == f"{deg[5]}7":
-            suggestions[f"{deg[1]}m7"] = "Resolve to ii7"
-            suggestions[f"{deg[1]}m7b5"] = "Resolve to iiø7"
-            suggestions[f"{get_note_by_interval(root, 3)}7"] = "Tritone Sub (subV7/ii)"
-        # ... (all your other elif conditions for suggestions remain exactly as you had them)
+            
+            # --- MINOR JAZZ SUGGESTIONS ---
+            v_chord = get_note_by_interval(root, 7)
+            if last == f"{deg[0]}m7" or last == f"{root}m":
+                suggestions[f"{deg[1]}m7b5"] = "Move to iiø7"
+                suggestions[f"{deg[3]}m7"] = "Move to ivm7"
+            elif last == f"{deg[1]}m7b5":
+                suggestions[v_chord] = "Minor ii-V connection"
+                suggestions[f"{get_note_by_interval(root, 1)}7"] = "Tritone Sub of V"
+            elif last == v_chord:
+                suggestions[f"{deg[0]}m7"] = "Resolution to i"
+                suggestions[f"{deg[5]}maj7"] = "Deceptive Resolution (bVI)"
 
     return {
         "suggestions": suggestions,
