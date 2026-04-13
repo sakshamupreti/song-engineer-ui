@@ -16,12 +16,89 @@ const CLICHES = [
 ];
 
 const FIGURES_OF_SPEECH = [
-  { name: "Alliteration", desc: "The repetition of the same consonant sounds at the beginning of words near each other.", usage: "Creates a rhythmic, driving, or hypnotic musicality.", examples: ["'Whisper words of wisdom'"] },
-  { name: "Assonance", desc: "The repetition of internal vowel sounds in nearby words.", usage: "Creates an internal, hidden rhyme scheme that makes lines flow beautifully.", examples: ["'I feel the need, the need for speed'"] },
-  { name: "Anaphora", desc: "Repeating the same word or phrase at the beginning of successive lines.", usage: "Builds massive emotional momentum and tension.", examples: ["'Every breath you take / Every move you make'"] },
-  { name: "Personification", desc: "Giving human qualities to inanimate objects.", usage: "Helps you 'show, don't tell'.", examples: ["'While my guitar gently weeps'"] },
-  { name: "Hyperbole", desc: "Deliberate exaggeration not meant to be taken literally.", usage: "Raises the emotional stakes.", examples: ["'I'd catch a grenade for ya'"] },
-  { name: "Oxymoron", desc: "A phrase combining two contradictory terms.", usage: "Captures complex, conflicted feelings perfectly.", examples: ["'The sound of silence'"] }
+  // --- SONIC & RHYTHMIC DEVICES (Prosody Focus) ---
+  { 
+    name: "Alliteration", 
+    desc: "The repetition of the same consonant sounds at the beginning of words near each other.", 
+    usage: "Creates a rhythmic, driving, or hypnotic musicality. Great for locking into a drum groove.", 
+    examples: ["'Whisper words of wisdom' (The Beatles)", "'Bad blood' (Taylor Swift)"] 
+  },
+  { 
+    name: "Assonance", 
+    desc: "The repetition of internal vowel sounds in nearby words.", 
+    usage: "Creates an internal, hidden rhyme scheme that makes lines flow beautifully and smoothly without sounding forced.", 
+    examples: ["'I feel the need, the need for speed'", "'Hear the mellow wedding bells' (Edgar Allan Poe)"] 
+  },
+  { 
+    name: "Consonance", 
+    desc: "The repetition of consonant sounds within or at the end of words.", 
+    usage: "Acts like a linguistic drum kit. Creates a percussive, biting rhythm that helps vocals cut through a dense mix.", 
+    examples: ["'Ticking in the dark, the clock struck a spark'", "'Mike likes his new bike'"] 
+  },
+  { 
+    name: "Enjambment", 
+    desc: "Continuing a sentence or thought across a line break without a grammatical pause.", 
+    usage: "Pulls the listener forward, blurring the strict musical grid to create conversational, unpredictable, and breathless phrasing.", 
+    examples: ["'I've got a hundred million reasons to walk away / But baby, I just need one good one to stay' (Lady Gaga)"] 
+  },
+  { 
+    name: "Epizeuxis", 
+    desc: "The immediate, rapid-fire repetition of a single word.", 
+    usage: "Hammers home an emotional peak and creates an inescapable, driving rhythmic hook.", 
+    examples: ["'Never, never, never, never giving up'", "'Work, work, work, work, work' (Rihanna)"] 
+  },
+
+  // --- REPETITION & STRUCTURE ---
+  { 
+    name: "Anaphora", 
+    desc: "Repeating the same word or phrase at the beginning of successive lines.", 
+    usage: "Builds massive emotional momentum, tension, and a chant-like predictability that audiences love.", 
+    examples: ["'Every breath you take / Every move you make' (The Police)"] 
+  },
+  { 
+    name: "Epistrophe", 
+    desc: "Repeating the same word or phrase at the end of successive lines.", 
+    usage: "Creates a haunting echo effect and provides a very satisfying, conclusive anchor to a verse or chorus.", 
+    examples: ["'Cause if you liked it then you should have put a ring on it / If you liked it then you should've put a ring on it' (Beyoncé)"] 
+  },
+
+  // --- IMAGERY & CONTRAST ---
+  { 
+    name: "Metaphor", 
+    desc: "Directly equating two unrelated things to highlight a shared trait, without using 'like' or 'as'.", 
+    usage: "Paints an immediate, vivid image without wasting syllables. Great for intense emotional declarations.", 
+    examples: ["'Your face is a sun outshining the moon'", "'You're a falling star, you're the get away car' (Bruno Mars)"] 
+  },
+  { 
+    name: "Simile", 
+    desc: "Comparing two different things using the words 'like' or 'as'.", 
+    usage: "Creates relatable imagery while maintaining a softer, more reflective lyrical flow than a direct metaphor.", 
+    examples: ["'Shine bright like a diamond' (Rihanna)", "'Cuts like a knife' (Bryan Adams)"] 
+  },
+  { 
+    name: "Personification", 
+    desc: "Giving human qualities to inanimate objects, weather, or concepts.", 
+    usage: "Helps you 'show, don't tell'. Turns static scenery into an active character in your song.", 
+    examples: ["'While my guitar gently weeps' (The Beatles)", "'The city sleeps'"] 
+  },
+  { 
+    name: "Hyperbole", 
+    desc: "Deliberate, extreme exaggeration not meant to be taken literally.", 
+    usage: "Raises the emotional stakes to a 10/10. Perfect for anthemic choruses or expressions of extreme heartbreak/love.", 
+    examples: ["'I'd catch a grenade for ya' (Bruno Mars)", "'A thousand years' (Christina Perri)"] 
+  },
+  { 
+    name: "Oxymoron", 
+    desc: "A phrase combining two contradictory terms.", 
+    usage: "Captures complex, conflicted feelings perfectly. Great for highlighting the bittersweet nature of a relationship.", 
+    examples: ["'The sound of silence' (Simon & Garfunkel)", "'Cruel summer' (Taylor Swift)"] 
+  },
+  { 
+    name: "Metonymy", 
+    desc: "Substituting the name of one object for another object closely associated with it.", 
+    usage: "Makes abstract concepts highly tangible and saves valuable metric real estate in tight melodic lines.", 
+    examples: ["'The suits are coming' (meaning corporate executives)", "'The pen is mightier than the sword'"] 
+  }
 ];
 
 const PROMPT_LIBRARY = {
@@ -601,7 +678,7 @@ function App() {
               <button className="audio-delete-btn" onClick={deleteRecording}>✕</button>
             </div>
           )}
-          
+
           <div style={{ borderLeft: '1px solid #444', height: '20px' }}></div>
           <button onClick={() => setIsMetronomePlaying(!isMetronomePlaying)} style={{background: isMetronomePlaying ? '#ff4b4b' : '#333', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer'}}>
             {isMetronomePlaying ? "⏹" : "▶ MET"}
