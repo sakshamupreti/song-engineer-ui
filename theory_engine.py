@@ -150,15 +150,43 @@ def generate_chords(key: str, last_chord: str, jazz_mode: bool) -> dict:
                 suggestions[f"{deg[0]}maj7"] = "Resolution to I"
                 suggestions[f"{deg[5]}m7"] = "Deceptive Resolution (vi7)"
                 
-            # Removed the old bVII7 trigger here to avoid conflict with the new modal section below
             elif last == f"{deg[3]}maj7":
                 suggestions[f"{deg[3]}#dim7"] = "Ascending Diminished (→ V7)"
                 suggestions[f"{get_note_by_interval(root, 10)}7"] = "Backdoor Setup (bVII7)"
-                
-            elif last == f"{deg[5]}7":
-                suggestions[f"{deg[1]}m7"] = "Resolve to ii7"
-                suggestions[f"{get_note_by_interval(root, 3)}7"] = "Tritone Sub (subV7/ii)"
 
+            # 🎯 ==========================================
+            # 🎯 SECONDARY DOMINANT RESOLUTIONS
+            # ==========================================
+            
+            # V7/IV (e.g., C7 in C Major)
+            elif last == f"{deg[0]}7":
+                suggestions[f"{deg[3]}maj7"] = "Standard Resolve (→ IVmaj7)"
+                suggestions[f"{deg[1]}m7"] = "Deceptive drop (→ ii7)"
+                
+            # V7/V (e.g., D7 in C Major)
+            elif last == f"{deg[1]}7":
+                suggestions[f"{deg[4]}7"] = "Standard Resolve (→ V7)"
+                suggestions[f"{deg[5]}m7"] = "Deceptive Resolve (→ vi7)"
+                
+            # V7/vi (e.g., E7 in C Major) - Your "Creep" example
+            elif last == f"{deg[2]}7":
+                suggestions[f"{deg[5]}m7"] = "Standard Resolve (→ vi7)"
+                suggestions[f"{deg[3]}maj7"] = "Deceptive Major lift (→ IVmaj7)"
+                
+            # V7/ii (e.g., A7 in C Major)
+            elif last == f"{deg[5]}7":
+                suggestions[f"{deg[1]}m7"] = "Standard Resolve (→ ii7)"
+                suggestions[f"{deg[3]}maj7"] = "Deceptive cadence (→ IVmaj7)"
+                suggestions[f"{get_note_by_interval(root, 3)}7"] = "Tritone Sub (subV7/ii)"
+                
+            # V7/iii (e.g., B7 in C Major)
+            elif last == f"{deg[6]}7":
+                suggestions[f"{deg[2]}m7"] = "Standard Resolve (→ iii7)"
+                suggestions[f"{deg[5]}m7"] = "Cycle of 4ths (→ vi7)"
+
+            # 🎹 ==========================================
+            # 🎹 TRITONE & PASSING CHORD RESOLUTIONS
+            # ==========================================
             elif last == f"{get_note_by_interval(root, 1)}7":
                 suggestions[f"{deg[0]}maj7"] = "Chromatic Resolution (→ I)"
             elif last == f"{get_note_by_interval(root, 3)}7":
@@ -172,19 +200,22 @@ def generate_chords(key: str, last_chord: str, jazz_mode: bool) -> dict:
             elif last == f"{deg[3]}#dim7":
                 suggestions[f"{deg[4]}7"] = "Resolve up to V7"
 
-            # 🎸 --- Resolving the vi7 (e.g., Am7 in C) ---
+            # 🎸 ==========================================
+            # 🎸 DIATONIC 7TH RESOLUTIONS
+            # ==========================================
+            # Resolving the vi7 (e.g., Am7 in C)
             elif last == f"{deg[5]}m7":
                 suggestions[f"{deg[1]}m7"] = "Cycle of 4ths (→ ii7)"
                 suggestions[f"{deg[5]}7"] = "Dominant Shift (Turn into V7/ii)"
                 suggestions[f"{deg[3]}maj7"] = "Diatonic step down (→ IVmaj7)"
 
-            # 🎸 --- Resolving the iii7 (e.g., Em7 in C) ---
+            # Resolving the iii7 (e.g., Em7 in C)
             elif last == f"{deg[2]}m7":
                 suggestions[f"{deg[5]}m7"] = "Cycle of 4ths (→ vi7)"
                 suggestions[f"{deg[2]}7"] = "Dominant Shift (Turn into V7/vi)"
                 suggestions[f"{deg[3]}maj7"] = "Deceptive half-step (→ IVmaj7)"
 
-            # 🎸 --- NEW: Resolving the IV7 (e.g., F7 in C) ---
+            # Resolving the IV7 (e.g., F7 in C)
             elif last == f"{deg[3]}7":
                 suggestions[f"{deg[0]}maj7"] = "Blues Plagal resolve (→ Imaj7)"
                 suggestions[f"{deg[2]}m7"] = "Tritone Sub resolve (→ iii7)"
