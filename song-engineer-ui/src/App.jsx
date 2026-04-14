@@ -107,7 +107,7 @@ const FIGURES_OF_SPEECH = [
   },
 ];
 
-const PROMPT_LIBRARY = {
+const SONG_PROMPTS = {
   "Story": [
     { title: "The Overheard Conversation", desc: "Start with a line of dialogue you 'overheard' at a coffee shop." }, 
     { title: "Two Strangers", desc: "Write about two strangers waiting for a delayed train in the rain." },
@@ -135,15 +135,16 @@ const PROMPT_LIBRARY = {
     { title: "Title at the End", desc: "Do not reveal the title or main hook of the song until the very last line of the chorus." },
     { title: "Syllable Match", desc: "Write two verses where every single line has the exact same syllable count as the corresponding line in the other verse." },
     { title: "Sensory Overload", desc: "Use all five senses (sight, sound, touch, taste, smell) before the first chorus hits." }
-  ],
-  "Techniques": [
-    { title: "Dummy Lyrics (Vowel Focus)", "desc": "Mumble gibberish or vowel sounds over your chords to find the catchiest melody and rhythm first. Fit real words to that rhythm later." },
-    { title: "Object Writing", desc: "Pick a random object (e.g., 'a rusted key'). Set a timer for 5 minutes and write continuously using all five senses. Do not worry about rhyming." },
-    { title: "Conversational Phrasing", desc: "Speak your lyric out loud like a normal sentence. Notice where the natural emphasis falls, and ensure those stressed syllables land on the strong beats of the music." },
-    { title: "The Title-First Method", desc: "Start with a strong title or hook. Write backwards from that point, ensuring every single line in the verse points directly toward that hook." },
-    { title: "Subtraction (The Breath Check)", desc: "If a line feels clunky, remove the adjectives. Leave physical space for the singer to breathe; rests are just as important as the notes." }
   ]
 };
+
+const SONG_TECHNIQUES = [
+  { title: "Dummy Lyrics (Vowel Focus)", desc: "Mumble gibberish or vowel sounds over your chords to find the catchiest melody and rhythm first. Fit real words to that rhythm later." },
+  { title: "Object Writing", desc: "Pick a random object (e.g., 'a rusted key'). Set a timer for 5 minutes and write continuously using all five senses. Do not worry about rhyming." },
+  { title: "Conversational Phrasing", desc: "Speak your lyric out loud like a normal sentence. Notice where the natural emphasis falls, and ensure those stressed syllables land on the strong beats of the music." },
+  { title: "The Title-First Method", desc: "Start with a strong title or hook. Write backwards from that point, ensuring every single line in the verse points directly toward that hook." },
+  { title: "Subtraction (The Breath Check)", desc: "If a line feels clunky, remove the adjectives. Leave physical space for the singer to breathe; rests are just as important as the notes." }
+];
 
 const PROGRESSIONS = [
   { name: "Pop Punk / Optimistic", numerals: ["I", "V", "vi", "IV"] },
@@ -177,6 +178,7 @@ function App() {
   const [phrases, setPhrases] = useState([]);
 
   const [activePromptTab, setActivePromptTab] = useState("Story");
+  const [activePromptMode, setActivePromptMode] = useState("Prompts"); // Tracks the master toggle
   const [activeMenu, setActiveMenu] = useState(null);
   const [playMode, setPlayMode] = useState(false);
   const [bpm, setBpm] = useState(120);
@@ -1020,21 +1022,60 @@ function App() {
             </div>
           )}
 
-          {activeMenu === 'prompts' && (
+{activeMenu === 'prompts' && (
             <div className="drawer-content">
-              <h3>Song Prompts</h3>
-              <div className="tool-tabs">
-                {Object.keys(PROMPT_LIBRARY).map(tab => (
-                  <button key={tab} className={activePromptTab === tab ? "tab-btn active" : "tab-btn"} onClick={() => setActivePromptTab(tab)}>{tab}</button>
-                ))}
+              <h3>Writing Studio</h3>
+
+              {/* 🎛️ NEW: Primary Toggle for Prompts vs Techniques */}
+              <div className="mode-toggle-group" style={{ marginBottom: '15px' }}>
+                <button 
+                  className={activePromptMode === 'Prompts' ? 'mode-btn active' : 'mode-btn'} 
+                  onClick={() => setActivePromptMode('Prompts')}
+                >
+                  PROMPTS
+                </button>
+                <button 
+                  className={activePromptMode === 'Techniques' ? 'mode-btn active' : 'mode-btn'} 
+                  onClick={() => setActivePromptMode('Techniques')}
+                >
+                  TECHNIQUES
+                </button>
               </div>
+
+              {/* 📑 SECONDARY TABS: Only show if Prompts is selected */}
+              {activePromptMode === 'Prompts' && (
+                <div className="tool-tabs">
+                  {Object.keys(SONG_PROMPTS).map(tab => (
+                    <button 
+                      key={tab} 
+                      className={activePromptTab === tab ? "tab-btn active" : "tab-btn"} 
+                      onClick={() => setActivePromptTab(tab)}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* 📋 LIST RENDERING */}
               <div className="song-list" style={{marginTop: '10px'}}>
-                {PROMPT_LIBRARY[activePromptTab].map((item, i) => (
-                  <div key={i} className="phrase-card" onClick={() => insertAtCursor(`\n[Prompt: ${item.desc}]\n`)}>
-                    <span className="phrase-text">{item.title}</span>
-                    <span className="phrase-meaning">{item.desc}</span>
-                  </div>
-                ))}
+                {activePromptMode === 'Prompts' ? (
+                  /* Render the Prompt Cards */
+                  SONG_PROMPTS[activePromptTab].map((item, i) => (
+                    <div key={i} className="phrase-card" onClick={() => insertAtCursor(`\n[Prompt: ${item.desc}]\n`)}>
+                      <span className="phrase-text">{item.title}</span>
+                      <span className="phrase-meaning">{item.desc}</span>
+                    </div>
+                  ))
+                ) : (
+                  /* Render the Technique Cards */
+                  SONG_TECHNIQUES.map((item, i) => (
+                    <div key={i} className="phrase-card" onClick={() => insertAtCursor(`\n[Try using the '${item.title}' technique here]\n`)}>
+                      <span className="phrase-text" style={{color: '#a855f7'}}>{item.title}</span>
+                      <span className="phrase-meaning">{item.desc}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
