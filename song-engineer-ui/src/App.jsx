@@ -135,6 +135,13 @@ const PROMPT_LIBRARY = {
     { title: "Title at the End", desc: "Do not reveal the title or main hook of the song until the very last line of the chorus." },
     { title: "Syllable Match", desc: "Write two verses where every single line has the exact same syllable count as the corresponding line in the other verse." },
     { title: "Sensory Overload", desc: "Use all five senses (sight, sound, touch, taste, smell) before the first chorus hits." }
+  ],
+  "Techniques": [
+    { title: "Dummy Lyrics (Vowel Focus)", "desc": "Mumble gibberish or vowel sounds over your chords to find the catchiest melody and rhythm first. Fit real words to that rhythm later." },
+    { title: "Object Writing", desc: "Pick a random object (e.g., 'a rusted key'). Set a timer for 5 minutes and write continuously using all five senses. Do not worry about rhyming." },
+    { title: "Conversational Phrasing", desc: "Speak your lyric out loud like a normal sentence. Notice where the natural emphasis falls, and ensure those stressed syllables land on the strong beats of the music." },
+    { title: "The Title-First Method", desc: "Start with a strong title or hook. Write backwards from that point, ensuring every single line in the verse points directly toward that hook." },
+    { title: "Subtraction (The Breath Check)", desc: "If a line feels clunky, remove the adjectives. Leave physical space for the singer to breathe; rests are just as important as the notes." }
   ]
 };
 
