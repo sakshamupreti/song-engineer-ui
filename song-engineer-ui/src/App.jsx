@@ -270,6 +270,16 @@ function App() {
   const [audioData, setAudioData] = useState(null); 
   
   const [playingProgIndex, setPlayingProgIndex] = useState(null);
+  // 🎸 NEW: Custom Sequence Builder State
+  const [customSequence, setCustomSequence] = useState([]);
+
+  const addToCustomSequence = (chordName) => {
+    setCustomSequence([...customSequence, chordName]);
+  };
+
+  const removeFromCustomSequence = (indexToRemove) => {
+    setCustomSequence(customSequence.filter((_, index) => index !== indexToRemove));
+  };
   const activeProgressionRef = useRef([]);
   const nextChordTimeRef = useRef(0);
   const currentChordIndexRef = useRef(0);
@@ -937,10 +947,11 @@ function App() {
             </div>
           )}
 
-          {activeMenu === 'progressions' && (
+{activeMenu === 'progressions' && (
             <div className="drawer-content">
               <h3>Sequence Builder</h3>
-              <div className="progression-controls">
+              
+              <div className="progression-controls" style={{ marginBottom: '15px' }}>
                 <label style={{color: '#888', fontSize: '0.85rem'}}>Playback Style</label>
                 <div className="style-selector">
                   <button className={`style-btn ${playbackStyle === 'block' ? 'active' : ''}`} onClick={() => setPlaybackStyle('block')}>Block</button>
@@ -948,6 +959,65 @@ function App() {
                   <button className={`style-btn ${playbackStyle === 'fingerstyle' ? 'active' : ''}`} onClick={() => setPlaybackStyle('fingerstyle')}>Finger</button>
                 </div>
               </div>
+
+              {/* 🛠️ NEW: CUSTOM SEQUENCE BUILDER */}
+              <div className="custom-sequence-builder">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <strong style={{ color: '#a855f7', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Build Your Own</strong>
+                  {customSequence.length > 0 && (
+                    <button onClick={() => setCustomSequence([])} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold' }}>Clear All</button>
+                  )}
+                </div>
+
+                {/* The Dropzone / Display */}
+                <div className="custom-sequence-display">
+                  {customSequence.length === 0 ? (
+                    <span style={{ color: '#666', fontSize: '0.85rem', fontStyle: 'italic', padding: '5px 0' }}>Tap chords below to build a sequence...</span>
+                  ) : (
+                    customSequence.map((chord, i) => (
+                      <div key={i} className="sequence-chord-chip" onClick={() => removeFromCustomSequence(i)} title="Click to remove">
+                        {chord} <span style={{ color: '#ef4444', fontSize: '0.7rem', marginLeft: '4px' }}>✕</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Action Buttons for Custom Sequence */}
+                {customSequence.length > 0 && (
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                    <button
+                      style={{ flex: 1, backgroundColor: playingProgIndex === 'custom' ? '#ef4444' : '#22c55e', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+                      onClick={() => toggleProgression('custom', customSequence)}
+                    >
+                      {playingProgIndex === 'custom' ? '⏸ Stop' : '▶ Play Custom'}
+                    </button>
+                    <button
+                      style={{ flex: 1, backgroundColor: '#3b82f6', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+                      onClick={() => insertAtCursor(`\n[${customSequence.join("] [")}]\n`)}
+                    >
+                      ➕ Insert
+                    </button>
+                  </div>
+                )}
+
+                {/* Mini Palette for Selection */}
+                <div style={{ marginTop: '15px', borderTop: '1px solid #333', paddingTop: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#888' }}>AVAILABLE CHORDS:</span>
+                    <span style={{ fontSize: '0.7rem', color: '#a855f7', fontWeight: 'bold' }}>{projectKey} {jazzMode ? 'JAZZ' : 'STANDARD'}</span>
+                  </div>
+                  <div className="mini-palette">
+                    {palette.map((p, i) => (
+                      <button key={i} className="mini-chord-btn" onClick={() => addToCustomSequence(p.name)}>
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* EXISTING PROGRESSION TEMPLATES */}
+              <h4 style={{ color: '#888', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '10px', marginTop: '20px' }}>Templates</h4>
               <div className="song-list">
                 {PROGRESSIONS.map((prog, i) => {
                   const actualChords = prog.numerals.map(numeral => {

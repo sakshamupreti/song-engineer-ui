@@ -340,6 +340,76 @@ header {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* =========================================
+   CUSTOM SEQUENCE BUILDER
+========================================= */
+.custom-sequence-builder {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.custom-sequence-display {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+  min-height: 40px;
+  align-items: center;
+  scrollbar-width: none; /* Firefox */
+}
+
+.custom-sequence-display::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.sequence-chord-chip {
+  background: #222;
+  border: 1px solid #444;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: bold;
+  color: #fff;
+  transition: all 0.2s ease;
+}
+
+.sequence-chord-chip:hover {
+  background: rgba(239, 68, 68, 0.2); /* Red tint on hover */
+  border-color: #ef4444;
+}
+
+.mini-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mini-chord-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ccc;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mini-chord-btn:hover {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: white;
+  transform: translateY(-1px);
+}
+
 /* --- SCROLLBAR POLISH --- */
 .editor-textarea::-webkit-scrollbar { width: 8px; height: 8px; }
 .editor-textarea::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
