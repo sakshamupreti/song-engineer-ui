@@ -139,6 +139,30 @@ const SONG_PROMPTS = {
 };
 
 const SONG_TECHNIQUES = [
+  // 🧠 METHOD WRITING TECHNIQUES
+  { 
+    title: "The Deep Voice (Method Writing)", 
+    desc: "Bypass your inner censor by writing continuously without editing, focusing on raw, unpolished truth.",
+    steps: [
+      "1. Open a blank page.",
+      "2. Write continuously for 10 minutes without stopping.",
+      "3. Do not cross anything out, apologize, or try to rhyme.",
+      "4. Let the ugly, petty, or unpolished thoughts out. Mine this text for lyric fragments later."
+    ],
+    whyItWorks: "Your first instinct is usually to 'sound like a writer,' which leads to clichés. The Deep Voice forces you past the polite surface into raw, authentic emotion."
+  },
+  { 
+    title: "Image-Making (Method Writing)", 
+    desc: "Ban all abstract words (love, sadness, freedom, time) and translate emotions into physical, cinematic images.",
+    steps: [
+      "1. Identify the abstract emotion you want to convey (e.g., 'I miss you').",
+      "2. Forbid yourself from using the emotion's actual name.",
+      "3. Describe a physical scene a camera could film that proves the emotion (e.g., 'Your toothbrush is still in the cup')."
+    ],
+    whyItWorks: "Listeners don't feel abstractions; they feel physical realities. 'Show, don't tell' makes the emotion undeniable rather than just a stated fact."
+  },
+
+  // 🛠️ STRUCTURAL / WORKFLOW TECHNIQUES
   { 
     title: "Dummy Lyrics (Vowel Focus)", 
     desc: "Mumble gibberish or vowel sounds over your chords to find the catchiest melody and rhythm first.",
@@ -159,7 +183,7 @@ const SONG_TECHNIQUES = [
       "3. Write continuously. Do not stop to edit or rhyme.",
       "4. Force yourself to include Sight, Sound, Touch, Smell, and Taste."
     ],
-    whyItWorks: "It acts as a warm-up for your brain, forcing you to bypass clichés and access highly specific, cinematic sensory language."
+    whyItWorks: "It acts as a daily warm-up for your brain, forcing you to bypass clichés and access highly specific, cinematic sensory language."
   },
   { 
     title: "Conversational Phrasing", 
