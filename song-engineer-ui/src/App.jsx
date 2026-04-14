@@ -218,8 +218,8 @@ const SONG_TECHNIQUES = [
 ];
 
 const PROGRESSIONS = [
-  { name: "Pop Punk / Optimistic", numerals: ["I", "V", "vi", "IV"] },
-  { name: "Jazz Turnaround", numerals: ["ii", "V", "I", "vi"] },
+  { name: "Pop / Optimistic", numerals: ["I", "V", "vi", "IV"] },
+  { name: "ii-V-I-vi", numerals: ["ii", "V", "I", "vi"] },
   { name: "Doo-Wop / 50s", numerals: ["I", "vi", "IV", "V"] },
   { name: "Creep / Melancholy", numerals: ["I", "III", "IV", "iv"] }
 ];
