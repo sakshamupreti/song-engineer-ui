@@ -856,12 +856,11 @@ function App() {
   return (
     <div className="dashboard" style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <header>
-        <div className="brand" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+      <div className="brand" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
           <svg className="w-8 h-8 text-[#ff4b4b]" style={{width: '32px', height: '32px', color: '#ff4b4b'}} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <ellipse cx="50" cy="50" rx="48" ry="18" transform="rotate(-60 50 50)" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2"/>
             <ellipse cx="50" cy="50" rx="48" ry="18" transform="rotate(60 50 50)" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2"/>
             <ellipse cx="50" cy="50" rx="48" ry="18" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2"/>
-            <circle cx="50" cy="50" r="4" fill="currentColor"/>
             <path d="M20,60 L35,30 L50,70 L65,40 L80,55" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" style={{filter: 'drop-shadow(0px 2px 4px rgba(255,75,75,0.4))'}}/>
           </svg>
           <h1 style={{margin: 0, fontSize: '1.2rem'}}>Song<span style={{color: '#ff4b4b'}}>Engineer</span></h1>
