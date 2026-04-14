@@ -296,7 +296,8 @@ function App() {
   const gutterRef = useRef(null);   // Numbers
   const wrapperRef = useRef(null);  // NEW: The Scroll Boss
   
-  const metronomeInterval = useRef(null);
+  const nextTickTimeRef = useRef(0);
+  const beatCountRef = useRef(0);
   const droneNodes = useRef([]);
   const audioCtxRef = useRef(null);
 
@@ -494,27 +495,63 @@ function App() {
     }
   };
 
+  // --- MASTER TRANSPORT ENGINE (Web Audio API) ---
   useEffect(() => {
-    if (playingProgIndex === null) { clearTimeout(sequenceTimerRef.current); return; }
-    const scheduleAheadTime = 0.1; 
-    const lookahead = 25; 
-    const scheduler = () => {
-      const ctx = getAudioCtx();
-      while (nextChordTimeRef.current < ctx.currentTime + scheduleAheadTime) {
-        const chords = activeProgressionRef.current;
-        scheduleChord(chords[currentChordIndexRef.current], nextChordTimeRef.current, playbackStyle, bpm);
-        const barDuration = (60.0 / bpm) * 4;
-        nextChordTimeRef.current += barDuration;
-        currentChordIndexRef.current = (currentChordIndexRef.current + 1) % chords.length;
-      }
-      sequenceTimerRef.current = setTimeout(scheduler, lookahead);
-    };
+    const isPlayingAnything = isMetronomePlaying || playingProgIndex !== null;
+
+    if (!isPlayingAnything) {
+      clearTimeout(sequenceTimerRef.current);
+      // Reset the clocks when all audio stops so the next play is instant
+      nextChordTimeRef.current = 0;
+      nextTickTimeRef.current = 0;
+      beatCountRef.current = 0;
+      return;
+    }
+
+    const scheduleAheadTime = 0.1;
+    const lookahead = 25;
     const ctx = getAudioCtx();
     if (ctx.state === 'suspended') ctx.resume();
-    if (currentChordIndexRef.current === 0 && nextChordTimeRef.current === 0) { nextChordTimeRef.current = ctx.currentTime + 0.05; }
+
+    // If starting from silence, establish "Time Zero"
+    if (nextTickTimeRef.current === 0 || nextTickTimeRef.current < ctx.currentTime) {
+      const startTime = ctx.currentTime + 0.05;
+      nextTickTimeRef.current = startTime;
+      nextChordTimeRef.current = startTime;
+      beatCountRef.current = 0;
+      currentChordIndexRef.current = 0;
+    }
+
+    const scheduler = () => {
+      const beatDuration = 60.0 / bpm;
+      const barDuration = beatDuration * 4;
+
+      // 1. Process Metronome Ticks
+      while (nextTickTimeRef.current < ctx.currentTime + scheduleAheadTime) {
+        if (isMetronomePlaying) {
+           const isDownbeat = beatCountRef.current % 4 === 0;
+           scheduleTick(nextTickTimeRef.current, isDownbeat);
+        }
+        nextTickTimeRef.current += beatDuration;
+        beatCountRef.current += 1; // Advance the counter
+      }
+
+      // 2. Process Chords
+      while (nextChordTimeRef.current < ctx.currentTime + scheduleAheadTime) {
+        if (playingProgIndex !== null) {
+           const chords = activeProgressionRef.current;
+           scheduleChord(chords[currentChordIndexRef.current], nextChordTimeRef.current, playbackStyle, bpm);
+           currentChordIndexRef.current = (currentChordIndexRef.current + 1) % chords.length;
+        }
+        nextChordTimeRef.current += barDuration;
+      }
+
+      sequenceTimerRef.current = setTimeout(scheduler, lookahead);
+    };
+
     scheduler();
     return () => clearTimeout(sequenceTimerRef.current);
-  }, [playingProgIndex, playbackStyle, bpm]);
+  }, [isMetronomePlaying, playingProgIndex, playbackStyle, bpm]);
 
   // --- API FETCH EFFECTS ---
   useEffect(() => {
@@ -577,21 +614,39 @@ function App() {
   const toggleProgression = async (index, actualChords) => {
     const ctx = getAudioCtx();
     if (ctx.state === 'suspended') await ctx.resume();
+    
     if (playingProgIndex === index) {
-      setPlayingProgIndex(null); currentChordIndexRef.current = 0; nextChordTimeRef.current = 0;
+      setPlayingProgIndex(null); 
     } else {
-      activeProgressionRef.current = actualChords; setPlayingProgIndex(index);
-      currentChordIndexRef.current = 0; nextChordTimeRef.current = 0;
+      activeProgressionRef.current = actualChords; 
+      setPlayingProgIndex(index);
+      
+      if (!isMetronomePlaying) {
+          // If total silence, start instantly
+          nextChordTimeRef.current = 0;
+          nextTickTimeRef.current = 0;
+      }
+      // Reset index to 0 so the first chord plays on the next downbeat!
+      currentChordIndexRef.current = 0; 
     }
   };
 
-  const playTick = () => {
-    const ctx = getAudioCtx(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); osc.stop(ctx.currentTime + 0.05);
+  const scheduleTick = (time, isDownbeat) => {
+    const ctx = getAudioCtx(); 
+    const osc = ctx.createOscillator(); 
+    const gain = ctx.createGain();
+    
+    // Higher pitch for the '1' count!
+    osc.frequency.setValueAtTime(isDownbeat ? 1320 : 880, time);
+    
+    gain.gain.setValueAtTime(0.2, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+    
+    osc.connect(gain); 
+    gain.connect(ctx.destination);
+    
+    osc.start(time); 
+    osc.stop(time + 0.1);
   };
 
   // --- VOICE MEMO RECORDER ---
@@ -749,13 +804,6 @@ function App() {
     if (activeSongId) localStorage.setItem("song_engineer_id", activeSongId.toString()); else localStorage.removeItem("song_engineer_id");
   }, [songTitle, lyrics, activeSongId, audioData]);
 
-  useEffect(() => {
-    if (isMetronomePlaying) {
-      const ctx = getAudioCtx(); if (ctx.state === 'suspended') ctx.resume();
-      metronomeInterval.current = setInterval(playTick, 60000 / bpm);
-    } else { clearInterval(metronomeInterval.current); }
-    return () => clearInterval(metronomeInterval.current);
-  }, [isMetronomePlaying, bpm]);
 
   // --- SCROLL SYNC ENGINE ---
   const handleScroll = () => {
