@@ -139,11 +139,58 @@ const SONG_PROMPTS = {
 };
 
 const SONG_TECHNIQUES = [
-  { title: "Dummy Lyrics (Vowel Focus)", desc: "Mumble gibberish or vowel sounds over your chords to find the catchiest melody and rhythm first. Fit real words to that rhythm later." },
-  { title: "Object Writing", desc: "Pick a random object (e.g., 'a rusted key'). Set a timer for 5 minutes and write continuously using all five senses. Do not worry about rhyming." },
-  { title: "Conversational Phrasing", desc: "Speak your lyric out loud like a normal sentence. Notice where the natural emphasis falls, and ensure those stressed syllables land on the strong beats of the music." },
-  { title: "The Title-First Method", desc: "Start with a strong title or hook. Write backwards from that point, ensuring every single line in the verse points directly toward that hook." },
-  { title: "Subtraction (The Breath Check)", desc: "If a line feels clunky, remove the adjectives. Leave physical space for the singer to breathe; rests are just as important as the notes." }
+  { 
+    title: "Dummy Lyrics (Vowel Focus)", 
+    desc: "Mumble gibberish or vowel sounds over your chords to find the catchiest melody and rhythm first.",
+    steps: [
+      "1. Loop your chord progression.",
+      "2. Hit record and sing total nonsense (focus on strong vowel sounds like 'Oh' and 'Ah').",
+      "3. Transcribe the rhythm of the gibberish.",
+      "4. Find real words that map perfectly to those vowel sounds."
+    ],
+    whyItWorks: "It completely separates melody creation from lyric writing. If you try to do both at the same time, one usually suffers."
+  },
+  { 
+    title: "Object Writing", 
+    desc: "Set a timer for 5 minutes and write continuously about a random object using all five senses.",
+    steps: [
+      "1. Pick a random noun (e.g., 'a rusted key', 'coffee grounds').",
+      "2. Set a timer for 5 to 10 minutes.",
+      "3. Write continuously. Do not stop to edit or rhyme.",
+      "4. Force yourself to include Sight, Sound, Touch, Smell, and Taste."
+    ],
+    whyItWorks: "It acts as a warm-up for your brain, forcing you to bypass clichés and access highly specific, cinematic sensory language."
+  },
+  { 
+    title: "Conversational Phrasing", 
+    desc: "Speak your lyric out loud like a normal sentence to ensure the natural emphasis lands on the strong beats.",
+    steps: [
+      "1. Strip away the melody and speak the lyric like you are talking to a friend.",
+      "2. Notice which syllables naturally get louder or longer.",
+      "3. Adjust the melody so those stressed syllables land on the '1' or '3' beat of the measure."
+    ],
+    whyItWorks: "It prevents 'Yoda-speak' (awkwardly re-arranging words to force a rhyme) and makes the vocal performance sound effortless."
+  },
+  { 
+    title: "The Title-First Method", 
+    desc: "Start with a strong title or hook, and write backwards so every line points to that exact moment.",
+    steps: [
+      "1. Brainstorm a compelling, standalone title.",
+      "2. Place that title at the very end of your chorus.",
+      "3. Write verse lines that pose questions the title answers, or build tension the title releases."
+    ],
+    whyItWorks: "It keeps the song hyper-focused. Every great song is a single thesis statement; if a line doesn't support the title, it gets cut."
+  },
+  { 
+    title: "Subtraction (The Breath Check)", 
+    desc: "Remove filler words and adjectives to leave physical space for the singer to breathe.",
+    steps: [
+      "1. Read the section to a metronome.",
+      "2. Identify places where the phrasing feels rushed or you run out of breath.",
+      "3. Cut filler words ('just', 'really', 'very') and replace them with rests."
+    ],
+    whyItWorks: "Space creates groove. Singers need time to breathe, and listeners need a fraction of a second to process the emotional weight of the last line."
+  }
 ];
 
 const PROGRESSIONS = [
@@ -179,9 +226,14 @@ function App() {
 
   const [activePromptTab, setActivePromptTab] = useState("Story");
   const [activePromptMode, setActivePromptMode] = useState("Prompts"); // Tracks the master toggle
+  const [expandedTechnique, setExpandedTechnique] = useState(null);
   const [activeMenu, setActiveMenu] = useState(null);
   const [playMode, setPlayMode] = useState(false);
   const [bpm, setBpm] = useState(120);
+
+  const toggleTechnique = (title) => {
+    setExpandedTechnique(expandedTechnique === title ? null : title);
+  };
 
   // 🎸 NEW: Track the last chord clicked in Play Mode
   const [lastPlayedChord, setLastPlayedChord] = useState(null);
@@ -1026,7 +1078,7 @@ function App() {
             <div className="drawer-content">
               <h3>Writing Studio</h3>
 
-              {/* 🎛️ NEW: Primary Toggle for Prompts vs Techniques */}
+              {/* 🎛️ Primary Toggle for Prompts vs Techniques */}
               <div className="mode-toggle-group" style={{ marginBottom: '15px' }}>
                 <button 
                   className={activePromptMode === 'Prompts' ? 'mode-btn active' : 'mode-btn'} 
@@ -1068,13 +1120,54 @@ function App() {
                     </div>
                   ))
                 ) : (
-                  /* Render the Technique Cards */
-                  SONG_TECHNIQUES.map((item, i) => (
-                    <div key={i} className="phrase-card" onClick={() => insertAtCursor(`\n[Try using the '${item.title}' technique here]\n`)}>
-                      <span className="phrase-text" style={{color: '#a855f7'}}>{item.title}</span>
-                      <span className="phrase-meaning">{item.desc}</span>
-                    </div>
-                  ))
+                  /* 🧠 Render the Interactive Technique Accordion */
+                  <div className="figures-list">
+                    {SONG_TECHNIQUES.map((tech) => (
+                      <div 
+                        key={tech.title} 
+                        className={`figure-card ${expandedTechnique === tech.title ? 'expanded' : ''}`}
+                        onClick={() => toggleTechnique(tech.title)}
+                      >
+                        <div className="figure-header">
+                          <span className="figure-name" style={{color: '#a855f7'}}>{tech.title}</span>
+                          <span className="expand-icon">{expandedTechnique === tech.title ? '−' : '+'}</span>
+                        </div>
+                        
+                        <span className="figure-desc">{tech.desc}</span>
+                        
+                        {/* 🔽 EXPANDED DETAILS 🔽 */}
+                        {expandedTechnique === tech.title && (
+                          <div className="figure-details" onClick={(e) => e.stopPropagation()}>
+                            <div className="detail-section">
+                              <strong style={{color: '#a855f7', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '1px'}}>How to execute:</strong>
+                              <ul style={{ listStyleType: 'none', paddingLeft: 0, marginTop: '8px' }}>
+                                {tech.steps.map((step, i) => (
+                                  <li key={i} style={{ fontSize: '0.75rem', color: '#ccc', marginBottom: '6px', lineHeight: '1.4' }}>
+                                    {step}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div className="detail-section" style={{ marginTop: '12px' }}>
+                              <strong style={{color: '#a855f7', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '1px'}}>Why it works:</strong>
+                              <p style={{ fontStyle: 'italic', color: '#888', margin: 0, marginTop: '6px', fontSize: '0.75rem', lineHeight: '1.4' }}>{tech.whyItWorks}</p>
+                            </div>
+                            
+                            <button 
+                              className="magic-btn" 
+                              style={{marginTop: '15px', width: '100%', padding: '8px', backgroundColor: 'rgba(168, 85, 247, 0.2)', color: '#a855f7', border: '1px solid #a855f7'}} 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                insertAtCursor(`\n[Try using the '${tech.title}' technique here]\n`);
+                              }}
+                            >
+                              + Insert Reminder
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
