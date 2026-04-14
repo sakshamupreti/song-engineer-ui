@@ -365,19 +365,53 @@ function App() {
   const getNotesForChord = (chordName) => {
     const rootMatch = chordName.match(/^[A-G][b#]?/);
     if (!rootMatch) return [];
+    
     const rootFreq = NOTE_FREQS[rootMatch[0]];
     const isMinor = chordName.includes('m') && !chordName.includes('maj');
     const isDim = chordName.includes('dim') || chordName.includes('ø') || chordName.includes('m7b5');
     const is7th = chordName.includes('7');
     const isMaj7 = chordName.includes('maj7');
+    
+    // Pure ratio math
     const third = isMinor || isDim ? 1.189 : 1.26;
     const fifth = isDim ? 1.414 : 1.498;
     const ratios = [1, third, fifth];
+    
     if (is7th) {
         if (isMaj7) ratios.push(1.887);
-        else ratios.push(1.782);
+        else ratios.push(1.782); 
     }
-    return ratios.map(r => rootFreq * r);
+
+    // 🎹 1. THE INVERSION CLAMP (Close Voicing)
+    // We force all notes to sit in a smooth "Pad" range.
+    // If a note goes too high, we drop it down an octave (divide by 2).
+    let notes = ratios.map(r => {
+      let freq = rootFreq * r;
+      while (freq > 550) { 
+        freq = freq / 2; // Automatically creates 1st and 2nd inversions!
+      }
+      return freq;
+    });
+
+    // 🎸 2. STRUM SORTING
+    // Because we inverted the notes, they are out of order. We sort them 
+    // from lowest to highest pitch so the "Strum" and "Fingerstyle" patterns sound correct.
+    notes.sort((a, b) => a - b);
+
+    // 🎸 3. SMART SUB-BASS
+    // We add a dedicated bass note back to the bottom to ground the chord.
+    let bassFreq = rootFreq / 2;
+    
+    // If the root is higher than F# (like G, A, or B), we drop the bass an extra octave.
+    // This stops the bassline from jumping wildly, keeping it smooth and thick.
+    if (rootFreq > 370) {
+      bassFreq = bassFreq / 2; 
+    }
+    
+    // Add the heavy bass note to the start of the array
+    notes.unshift(bassFreq);
+
+    return notes;
   };
 
   const scheduleNote = (ctx, freq, startTime, duration, volume = 0.1) => {
