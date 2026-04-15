@@ -439,27 +439,56 @@ function App() {
   const toggleDrone = () => {
     const ctx = getAudioCtx();
     if (ctx.state === 'suspended') ctx.resume();
+    
     if (isDronePlaying) {
-      droneNodes.current.forEach(node => node.stop());
+      // 🌬️ 1. THE FADE OUT
+      // Instead of killing the sound instantly, we gracefully fade it out over 2 seconds.
+      droneNodes.current.forEach(node => {
+         if (node.gainNode) {
+             node.gainNode.gain.setValueAtTime(node.gainNode.gain.value, ctx.currentTime);
+             node.gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2); 
+         }
+         node.osc.stop(ctx.currentTime + 2);
+      });
       droneNodes.current = [];
       setIsDronePlaying(false);
     } else {
       const root = projectKey.replace('m', '');
-      const rootFreq = NOTE_FREQS[root] / 2;
-      [1, 1.002, 1.498].forEach(ratio => {
+      // Drop it an extra octave for a deep, chest-resonating hum
+      const rootFreq = NOTE_FREQS[root] / 4; 
+      
+      // 🧘‍♂️ 2. THE SINGING BOWL VOICING
+      // We use pure sine waves to create a crystal-clear, smooth tone.
+      const voices = [
+        { ratio: 1, type: 'sine', vol: 0.15 },       // Deep Root
+        { ratio: 1.003, type: 'sine', vol: 0.1 },    // Slight detune (creates a slow, soothing wobble/breathing effect)
+        { ratio: 1.498, type: 'sine', vol: 0.08 },   // Perfect Fifth
+        { ratio: 2, type: 'triangle', vol: 0.02 }    // Octave up (Triangle wave adds just a tiny bit of texture)
+      ];
+
+      voices.forEach(v => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         const filter = ctx.createBiquadFilter();
-        osc.type = 'sawtooth';
-        osc.frequency.value = rootFreq * ratio;
+        
+        osc.type = v.type;
+        osc.frequency.value = rootFreq * v.ratio;
+        
         filter.type = 'lowpass';
-        filter.frequency.value = 300;
-        gain.gain.value = 0.1;
+        filter.frequency.value = 400; // Shaves off any harsh high frequencies
+        
+        // 🌬️ 3. THE FADE IN
+        // Start at true silence (0) and gently swell up to target volume over 3 seconds
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(v.vol, ctx.currentTime + 3);
+        
         osc.connect(filter);
         filter.connect(gain);
         gain.connect(ctx.destination);
+        
         osc.start();
-        droneNodes.current.push(osc);
+        // Store both the oscillator and the gain node so we can fade them out later
+        droneNodes.current.push({ osc, gainNode: gain });
       });
       setIsDronePlaying(true);
     }
