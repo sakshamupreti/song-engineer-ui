@@ -61,8 +61,17 @@ export function AuthProvider({ children }) {
     if (res.ok) {
       setSyncStatus('ok');
       setLastSyncAt(Date.now());
+      setAuthWarning('');
+    } else if (res.needsReauth) {
+      setSyncStatus('offline');
+      setAuthWarning(
+        res.message ||
+          'Your cloud session expired. Sign out and sign in again so phone and laptop can sync.'
+      );
+      setAuthOpen(true);
     } else {
       setSyncStatus('offline');
+      setAuthWarning(res.message || 'Could not reach cloud sync. Check your connection and try Sync now.');
     }
     return res;
   }, []);

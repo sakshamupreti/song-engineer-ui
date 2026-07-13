@@ -5,9 +5,16 @@
  * - Signed-in (local fallback) → device only (cannot cross devices)
  */
 
-const API_BASE =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
-  'https://song-engineer-ui-2.onrender.com';
+/**
+ * API base — same-origin Vercel /api (durable).
+ * Override with VITE_API_URL if needed.
+ */
+function resolveApiBases() {
+  const env = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_API_URL : '';
+  if (env) return [env.replace(/\/$/, '')];
+  // '' => https://songengineer.com/api/... on production
+  return [''];
+}
 
 const GUEST = {
   library: 'songEngineer_library',
@@ -156,10 +163,11 @@ export function migrateGuestIntoUser(userId) {
   }
 }
 
-async function api(path, { method = 'GET', body, token } = {}) {
+async function apiOnce(base, path, { method = 'GET', body, token } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, {
+  const url = `${base}${path}`;
+  const res = await fetch(url, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -176,9 +184,30 @@ async function api(path, { method = 'GET', body, token } = {}) {
     const err = new Error(msg);
     err.status = res.status;
     err.data = data;
+    err.url = url;
     throw err;
   }
   return data;
+}
+
+/** Try same-origin Vercel API first, then Render fallback */
+async function api(path, opts = {}) {
+  const bases = resolveApiBases();
+  let lastErr;
+  for (const base of bases) {
+    try {
+      return await apiOnce(base, path, opts);
+    } catch (err) {
+      lastErr = err;
+      // Auth errors shouldn't fall through to another backend with different secrets
+      if (err.status === 401 || err.status === 409 || err.status === 400 || err.status === 413) {
+        throw err;
+      }
+      // Network / 404 / 5xx → try next base
+      continue;
+    }
+  }
+  throw lastErr || new Error('Cloud API unreachable');
 }
 
 function loadLocalUsers() {
@@ -461,7 +490,11 @@ export async function syncBidirectional() {
       window.dispatchEvent(new CustomEvent('se-user-data-changed', { detail: { source: 'sync' } }));
       return { ok: true, library: mergedLib, progress: mergedProg };
     } catch (err) {
-      return { ok: false, error: err };
+      // Stale token from wiped server — force re-login
+      if (err.status === 401) {
+        return { ok: false, error: err, needsReauth: true, message: err.message };
+      }
+      return { ok: false, error: err, message: err.message || 'Sync failed' };
     } finally {
       syncInFlight = null;
     }
@@ -492,4 +525,4 @@ export async function saveLibraryAndSync(library, userId = getSession()?.userId)
   return res;
 }
 
-export { API_BASE };
+export const API_BASE = typeof window !== 'undefined' ? window.location.origin : '';

@@ -100,8 +100,16 @@ function Landing({ onOpen }) {
 }
 
 function AccountControl() {
-  const { user, isLoggedIn, setAuthOpen, signOut, syncStatus, runSync, authWarning, lastSyncAt } =
-    useAuth();
+  const {
+    user,
+    isLoggedIn,
+    setAuthOpen,
+    signOut,
+    syncStatus,
+    runSync,
+    authWarning,
+    lastSyncAt,
+  } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [syncingNow, setSyncingNow] = useState(false);
 
@@ -156,11 +164,26 @@ function AccountControl() {
               disabled={syncingNow || syncStatus === 'syncing'}
               onClick={async () => {
                 setSyncingNow(true);
-                await runSync();
+                const res = await runSync();
                 setSyncingNow(false);
+                if (!res?.ok && res?.message) {
+                  // status already shown in menu warning
+                }
               }}
             >
               {syncingNow || syncStatus === 'syncing' ? 'Syncing…' : 'Sync now'}
+            </button>
+          )}
+          {(syncStatus === 'offline' || user.source === 'local') && (
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                signOut();
+                setAuthOpen(true);
+              }}
+            >
+              Re-sign in to fix sync
             </button>
           )}
           <button
