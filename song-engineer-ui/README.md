@@ -1,16 +1,64 @@
-# React + Vite
+# SongEngineer — Write · Sing · Craft
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+All-in-one songwriting and singing studio.
 
-Currently, two official plugins are available:
+## Modes
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Mode | What it is |
+|------|------------|
+| **Home** | Landing with paths into Write and Sing |
+| **Write Studio** | Lyrics IDE (Sing-style sidebar), harmony palette, progressions, rhymes, imagery, craft-first metaphors & similes, figures of speech, prompts, library, voice memos |
+| **Sing Studio** | Local vocal coach — live pitch/formants/support, exercises, tuner, metronome, range finder, breath timer, progress, technique guide |
 
-## React Compiler
+Vocal analysis runs entirely in the browser (Web Audio API). No cloud AI for coaching.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Develop
 
-## Expanding the ESLint configuration
+```bash
+cd song-engineer-ui
+npm install
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Open the URL Vite prints (e.g. http://127.0.0.1:5173/).
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
+
+Production assets land in `dist/`. Deploy that folder (or your existing host pipeline for songengineer.com).
+
+## Backend (Write tools)
+
+Write Studio still calls the Song Engineer API for chords, words, and phrases:
+
+- `https://song-engineer-ui-2.onrender.com/api/...`
+
+Backend code lives in the parent `sculpt_react/` folder (`main.py`, `theory_engine.py`, etc.).
+
+## Project layout
+
+```
+src/
+  App.jsx              # Shell + home + mode switcher
+  index.css            # Shared design system
+  write/
+    WriteStudio.jsx    # Songwriting workbench
+    WriteStudio.css
+  sing/
+    SingStudio.jsx     # Vocal coach UI
+    SingStudio.css
+    lib/
+      audio-engine.js  # YIN pitch, formants, metronome, recorder
+      coach.js         # Rule-based tips + technique guide
+      exercises.js     # Exercise library
+```
+
+## Privacy
+
+- Vocal analysis and recordings stay on-device unless you download them
+- Song library and vocal progress use `localStorage`
+```
