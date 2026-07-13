@@ -1,0 +1,15 @@
+{
+  "buildCommand": "cd song-engineer-ui && npm install && npm run build",
+  "outputDirectory": "song-engineer-ui/dist",
+  "installCommand": "cd song-engineer-ui && npm install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/keepalive",
+      "schedule": "0 */12 * * *"
+    }
+  ]
+}
