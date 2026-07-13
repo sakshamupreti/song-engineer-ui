@@ -6,18 +6,14 @@
  */
 
 /**
- * API bases (tried in order):
- * 1) VITE_API_URL override
- * 2) Same-origin /api (if Vercel functions are live)
- * 3) Render durable backend (JSONBlob-backed accounts)
+ * Cloud API — Render backend (durable JSONBlob-backed accounts).
+ * Override with VITE_API_URL if needed.
  */
 function resolveApiBases() {
   const env = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_API_URL : '';
   if (env) return [env.replace(/\/$/, '')];
-  return [
-    '', // songengineer.com/api when Vercel functions deploy
-    'https://song-engineer-ui-2.onrender.com',
-  ];
+  // Always hit the Render API (proven live). Vercel /api was 404-ing.
+  return ['https://song-engineer-ui-2.onrender.com'];
 }
 
 const GUEST = {
