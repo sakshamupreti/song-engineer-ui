@@ -14,7 +14,15 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const s = getSession();
-    return s ? { id: s.userId, email: s.email, name: s.name, token: s.token } : null;
+    return s
+      ? {
+          id: s.userId,
+          email: s.email,
+          name: s.name,
+          token: s.token,
+          source: s.source || (String(s.token || '').startsWith('local.') ? 'local' : 'cloud'),
+        }
+      : null;
   });
   const [authOpen, setAuthOpen] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
