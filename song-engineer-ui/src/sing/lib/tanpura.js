@@ -124,7 +124,8 @@ class CrossfadeLooper {
   }
 
   setRate(rate) {
-    this.rate = Math.max(0.5, Math.min(2.0, rate));
+    // Allow wide range so every octave stays in true concert pitch
+    this.rate = Math.max(0.25, Math.min(4.0, rate));
     // Live sources keep old rate; next loop uses new rate.
     // For snappy key changes we restart if playing.
   }
@@ -294,11 +295,30 @@ export class TanpuraEngine {
     return await this.ctx.decodeAudioData(arr.slice(0));
   }
 
-  /** Pitch ratio relative to recorded C Sa */
+  /**
+   * Pitch ratio relative to recorded C3 Sa.
+   * Must be exact — previous 0.55–1.85 clamp kept samples near C3 while the
+   * continuous Sa bed moved with the octave, so only octave 3 sounded in tune.
+   */
   pitchRate() {
     const target = noteFreq(this.rootName, this.octave);
-    // Clamp so samples don't chipmunk/growl too hard
-    return Math.max(0.55, Math.min(1.85, target / SAMPLE_BASE_FREQ));
+    if (!SAMPLE_BASE_FREQ || !target) return 1;
+    // Soft safety only at extremes (octaves ~1–5 for C-range)
+    return Math.max(0.25, Math.min(4.0, target / SAMPLE_BASE_FREQ));
+  }
+
+  /** How much to trust the sample texture at this rate (1 = ideal, lower = more synth bed) */
+  sampleConfidence() {
+    const r = this.pitchRate();
+    // Sweet zone: within ±3 semitones of recorded C3 (~0.84–1.19)
+    if (r >= 0.84 && r <= 1.19) return 1;
+    // Within an octave up/down still usable
+    if (r >= 0.5 && r <= 2.0) {
+      const dist = r >= 1 ? r : 1 / r;
+      return Math.max(0.35, 1.15 - dist * 0.35);
+    }
+    // Extreme octaves: keep samples quieter, lean on pure Sa bed
+    return 0.22;
   }
 
   setVolume(v) {
@@ -366,13 +386,18 @@ export class TanpuraEngine {
 
   _retuneLive() {
     const rate = this.pitchRate();
+    const conf = this.sampleConfidence();
+    // Exact pitch always; dial sample vs bed mix so extremes stay musical
+    const mainGain = (this.styleId === 'pure' ? 0.28 : 0.52) * conf;
+    const droneGain = 0.32 * conf;
+
     if (this.mainLoop) {
       this.mainLoop.stop(true);
       this.mainLoop = null;
       if (this.buffers.main) {
         this.mainLoop = new CrossfadeLooper(this.ctx, this.buffers.main, this.master, {
           rate,
-          gain: 0.55,
+          gain: mainGain,
           fadeSec: 1.8,
         });
         this.mainLoop.start();
@@ -384,12 +409,13 @@ export class TanpuraEngine {
       if (this.buffers.drone) {
         this.droneLoop = new CrossfadeLooper(this.ctx, this.buffers.drone, this.master, {
           rate,
-          gain: 0.38,
+          gain: droneGain,
           fadeSec: 2.2,
         });
         this.droneLoop.start();
       }
     }
+    // Sa bed is oscillator-based at exact frequency — always restarts on retune
     this._restartSaBed();
   }
 
@@ -405,8 +431,11 @@ export class TanpuraEngine {
     const sa = this.saFreq();
     const t0 = ctx.currentTime;
     const bedGain = ctx.createGain();
+    // Boost pure Sa bed when samples are heavily shifted (keeps tone solid & in tune)
+    const conf = this.sampleConfidence();
+    const bedLevel = 0.18 + (1 - conf) * 0.22;
     bedGain.gain.setValueAtTime(0.0001, t0);
-    bedGain.gain.exponentialRampToValueAtTime(0.22, t0 + 1.2);
+    bedGain.gain.exponentialRampToValueAtTime(Math.max(0.001, bedLevel), t0 + 1.2);
 
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
@@ -491,16 +520,17 @@ export class TanpuraEngine {
     this.master.gain.setValueAtTime(0.0001, t);
     this.master.gain.exponentialRampToValueAtTime(Math.max(0.001, this.volume), t + 0.8);
 
-    // Always: continuous Sa bed
+    // Always: continuous Sa bed at exact target pitch
     this._startSaBed();
 
     const rate = this.pitchRate();
+    const conf = this.sampleConfidence();
 
     if (this.sampleMode && this.buffers.main) {
-      // Acoustic looped texture (plucks + harmonics)
+      // Acoustic looped texture — rate is exact so every octave is in tune
       this.mainLoop = new CrossfadeLooper(this.ctx, this.buffers.main, this.master, {
         rate,
-        gain: this.styleId === 'pure' ? 0.28 : 0.52,
+        gain: (this.styleId === 'pure' ? 0.28 : 0.52) * conf,
         fadeSec: 1.9,
       });
       this.mainLoop.start();
@@ -510,7 +540,7 @@ export class TanpuraEngine {
       // Extra continuous body
       this.droneLoop = new CrossfadeLooper(this.ctx, this.buffers.drone, this.master, {
         rate,
-        gain: 0.32,
+        gain: 0.32 * conf,
         fadeSec: 2.4,
       });
       this.droneLoop.start();

@@ -1439,9 +1439,13 @@ export default function SingStudio() {
                   <span>Octave</span>
                   <div className="sg-tanpura-oct-btns">
                     <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setTanpuraOct((o) => Math.max(1, o - 1))}>−</button>
-                    <strong>{tanpuraOct}</strong>
+                    <strong>{tanpuraOct}{tanpuraOct === 3 ? ' · sample' : ''}</strong>
                     <button type="button" className="sg-btn sg-btn-ghost" onClick={() => setTanpuraOct((o) => Math.min(5, o + 1))}>+</button>
                   </div>
+                  <p className="sg-hint" style={{ marginTop: 8 }}>
+                    Samples are recorded at C3. Other octaves pitch-shift exactly to your Sa
+                    {tanpuraOct === 3 ? ' (best acoustic match).' : ' (more synth bed when far from 3).'}
+                  </p>
                 </div>
               </div>
 
