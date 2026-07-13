@@ -192,6 +192,20 @@
   background: rgba(224, 176, 122, 0.1);
 }
 
+.se-account-btn.signed-in.warn {
+  color: #f0b0b0;
+  border-color: rgba(196, 120, 122, 0.4);
+  background: rgba(196, 120, 122, 0.12);
+}
+
+.se-account-warn {
+  color: #f0b0b0 !important;
+  background: rgba(196, 120, 122, 0.12);
+  border-radius: 8px;
+  margin-bottom: 8px !important;
+  line-height: 1.35;
+}
+
 .se-account-menu {
   position: absolute;
   top: calc(100% + 6px);

@@ -100,8 +100,10 @@ function Landing({ onOpen }) {
 }
 
 function AccountControl() {
-  const { user, isLoggedIn, setAuthOpen, signOut, syncStatus } = useAuth();
+  const { user, isLoggedIn, setAuthOpen, signOut, syncStatus, runSync, authWarning, lastSyncAt } =
+    useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [syncingNow, setSyncingNow] = useState(false);
 
   if (!isLoggedIn) {
     return (
@@ -112,12 +114,22 @@ function AccountControl() {
   }
 
   const label = user.name || user.email?.split('@')[0] || 'Account';
+  const statusLine =
+    user.source === 'local' || syncStatus === 'local-only'
+      ? 'this device only'
+      : syncStatus === 'ok'
+        ? 'cloud synced'
+        : syncStatus === 'offline'
+          ? 'offline cache'
+          : syncStatus === 'syncing'
+            ? 'syncing…'
+            : '';
 
   return (
     <div className="se-account-wrap">
       <button
         type="button"
-        className="se-account-btn signed-in"
+        className={`se-account-btn signed-in ${user.source === 'local' || syncStatus === 'local-only' ? 'warn' : ''}`}
         onClick={() => setMenuOpen((v) => !v)}
         title={user.email}
       >
@@ -127,11 +139,30 @@ function AccountControl() {
         <div className="se-account-menu">
           <p>
             {user.email}
-            {user.source === 'local' && ' · this device'}
-            {user.source !== 'local' && syncStatus === 'ok' && ' · cloud synced'}
-            {user.source !== 'local' && syncStatus === 'offline' && ' · offline cache'}
-            {user.source !== 'local' && syncStatus === 'syncing' && ' · syncing…'}
+            {statusLine ? ` · ${statusLine}` : ''}
+            {lastSyncAt && syncStatus === 'ok'
+              ? ` · ${new Date(lastSyncAt).toLocaleTimeString()}`
+              : ''}
           </p>
+          {(authWarning || user.source === 'local' || syncStatus === 'local-only') && (
+            <p className="se-account-warn">
+              {authWarning ||
+                'Device-only account — phone and laptop will not share songs until you sign in to the cloud.'}
+            </p>
+          )}
+          {user.source !== 'local' && (
+            <button
+              type="button"
+              disabled={syncingNow || syncStatus === 'syncing'}
+              onClick={async () => {
+                setSyncingNow(true);
+                await runSync();
+                setSyncingNow(false);
+              }}
+            >
+              {syncingNow || syncStatus === 'syncing' ? 'Syncing…' : 'Sync now'}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {

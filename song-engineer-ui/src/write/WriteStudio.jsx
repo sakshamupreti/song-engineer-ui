@@ -18,7 +18,7 @@ import {
   lastChordFromLyrics,
   chordsMatch,
 } from './chordEngine';
-import { getLibrary, setLibrary, getDraft, setDraft } from '../lib/userStore';
+import { getLibrary, setLibrary, getDraft, setDraft, syncBidirectional, isCloudSession, getSession } from '../lib/userStore';
 import { useAuth } from '../lib/AuthContext';
 import './WriteStudio.css';
 
@@ -823,35 +823,62 @@ function WriteStudio() {
 
   const refreshLibrary = () => setLibrarySongs(getLibrary());
 
-  const saveToLibrary = () => {
+  const saveToLibrary = async () => {
     if (!lyrics.trim() && !audioData) return alert('Write or record something first!');
     const library = getLibrary();
+    const now = Date.now();
+    let nextLib;
+    let msg;
+
     if (activeSongId) {
       const songIndex = library.findIndex((s) => s.id === activeSongId);
       if (songIndex >= 0) {
-        library[songIndex].title = songTitle;
-        library[songIndex].content = lyrics;
-        library[songIndex].audioData = audioData;
-        library[songIndex].date = new Date().toLocaleDateString();
-        setLibrary(library);
-        refreshLibrary();
-        return alert(
-          `"${songTitle}" updated!${isLoggedIn ? ' (saved to your account)' : ' (saved on this device)'}`
-        );
+        library[songIndex] = {
+          ...library[songIndex],
+          title: songTitle,
+          content: lyrics,
+          audioData,
+          date: new Date().toLocaleDateString(),
+          updatedAt: now,
+        };
+        nextLib = [...library];
+        msg = `"${songTitle}" updated`;
       }
     }
-    const newId = Date.now();
-    const newSong = {
-      id: newId,
-      title: songTitle,
-      content: lyrics,
-      audioData,
-      date: new Date().toLocaleDateString(),
-    };
-    setLibrary([newSong, ...library]);
-    setActiveSongId(newId);
+
+    if (!nextLib) {
+      const newId = Date.now();
+      const newSong = {
+        id: newId,
+        title: songTitle,
+        content: lyrics,
+        audioData,
+        date: new Date().toLocaleDateString(),
+        updatedAt: now,
+      };
+      nextLib = [newSong, ...library];
+      setActiveSongId(newId);
+      msg = `"${songTitle}" saved`;
+    }
+
+    // Local write first
+    setLibrary(nextLib);
     refreshLibrary();
-    alert(`"${songTitle}" saved${isLoggedIn ? ' to your account' : ' on this device'}!`);
+
+    // Bidirectional cloud sync so other devices get the edit
+    if (isLoggedIn && isCloudSession(getSession())) {
+      const res = await syncBidirectional();
+      if (res.ok) {
+        refreshLibrary();
+        alert(`${msg} and synced to your account.`);
+      } else {
+        alert(`${msg} on this device. Cloud sync failed — will retry when you're back online.`);
+      }
+    } else if (isLoggedIn) {
+      alert(`${msg} on this device only (account is offline-only — sign in when cloud is available to sync).`);
+    } else {
+      alert(`${msg} on this device. Sign in to sync across phone and laptop.`);
+    }
   };
 
   const handleNewSong = () => {
@@ -1866,9 +1893,11 @@ function WriteStudio() {
               <p className="ws-eyebrow">Your songs</p>
               <h3>Song Library</h3>
               <p className="hp-intro" style={{ marginBottom: 12 }}>
-                {isLoggedIn
-                  ? 'Saved to your account (and this device).'
-                  : 'Saved on this device only. Sign in to keep songs with your account.'}
+                {isLoggedIn && isCloudSession(getSession())
+                  ? 'Saved to your account and this device. Open the library on another device (or refocus the tab) to pull updates.'
+                  : isLoggedIn
+                    ? 'This account is device-only right now. Sign out and sign in when the cloud is available to enable phone ↔ laptop sync.'
+                    : 'Saved on this device only. Sign in to sync songs across phone and laptop.'}
               </p>
               <div className="song-list">
                 {librarySongs.map((song) => (

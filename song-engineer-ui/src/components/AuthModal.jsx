@@ -3,20 +3,29 @@ import { useAuth } from '../lib/AuthContext';
 import './AuthModal.css';
 
 export default function AuthModal() {
-  const { authOpen, setAuthOpen, signIn, signUp, authBusy, authError, setAuthError } = useAuth();
+  const { authOpen, setAuthOpen, signIn, signUp, authBusy, authError, setAuthError, authWarning } =
+    useAuth();
   const [mode, setMode] = useState('signin'); // signin | signup
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [localNote, setLocalNote] = useState('');
 
   if (!authOpen) return null;
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (mode === 'signup') {
-      await signUp({ email, password, name });
-    } else {
-      await signIn({ email, password });
+    setLocalNote('');
+    const res =
+      mode === 'signup'
+        ? await signUp({ email, password, name })
+        : await signIn({ email, password });
+    if (res?.ok && res.warning) setLocalNote(res.warning);
+    if (res?.ok && res.source === 'local') {
+      setLocalNote(
+        res.warning ||
+          'Signed in on this device only. For phone ↔ laptop sync, try again when the cloud is online.'
+      );
     }
   };
 
@@ -100,6 +109,11 @@ export default function AuthModal() {
           </label>
 
           {authError && <p className="se-auth-error">{authError}</p>}
+          {(localNote || authWarning) && (
+            <p className="se-auth-error" style={{ color: '#e0b07a', borderColor: 'rgba(224,176,122,0.35)', background: 'rgba(224,176,122,0.1)' }}>
+              {localNote || authWarning}
+            </p>
+          )}
 
           <button type="submit" className="se-auth-submit" disabled={authBusy}>
             {authBusy ? 'Working…' : mode === 'signup' ? 'Create account' : 'Sign in'}
@@ -107,7 +121,8 @@ export default function AuthModal() {
         </form>
 
         <p className="se-auth-note">
-          Without an account, everything stays private on this phone or computer.
+          Sign in so songs and singing progress sync across phone and laptop. Without an account,
+          data stays on this device only.
         </p>
       </div>
     </div>
