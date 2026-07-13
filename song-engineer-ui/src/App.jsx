@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import WriteStudio from './write/WriteStudio';
 import SingStudio from './sing/SingStudio';
+import { AuthProvider, useAuth } from './lib/AuthContext';
+import AuthModal from './components/AuthModal';
 import './App.css';
+import './components/AuthModal.css';
 
 const BrandMark = () => (
   <svg className="se-brand-mark" viewBox="0 0 100 100" fill="none" aria-hidden="true">
@@ -80,8 +83,10 @@ function Landing({ onOpen }) {
           <span>Draft chords and lyrics, then warm up and practice the vocal line without switching apps.</span>
         </div>
         <div className="se-highlight">
-          <strong>Private by design</strong>
-          <span>Vocal analysis runs in your browser. Songs and progress stay in local storage until you export.</span>
+          <strong>Your data, your choice</strong>
+          <span>
+            Guests keep songs &amp; progress on this device. Sign in to save them to your account across devices.
+          </span>
         </div>
         <div className="se-highlight">
           <strong>Built for musicians</strong>
@@ -94,7 +99,55 @@ function Landing({ onOpen }) {
   );
 }
 
-function App() {
+function AccountControl() {
+  const { user, isLoggedIn, setAuthOpen, signOut, syncStatus } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  if (!isLoggedIn) {
+    return (
+      <button type="button" className="se-account-btn" onClick={() => setAuthOpen(true)}>
+        Sign in
+      </button>
+    );
+  }
+
+  const label = user.name || user.email?.split('@')[0] || 'Account';
+
+  return (
+    <div className="se-account-wrap">
+      <button
+        type="button"
+        className="se-account-btn signed-in"
+        onClick={() => setMenuOpen((v) => !v)}
+        title={user.email}
+      >
+        {label}
+      </button>
+      {menuOpen && (
+        <div className="se-account-menu">
+          <p>
+            {user.email}
+            {user.source === 'local' && ' · this device'}
+            {user.source !== 'local' && syncStatus === 'ok' && ' · cloud synced'}
+            {user.source !== 'local' && syncStatus === 'offline' && ' · offline cache'}
+            {user.source !== 'local' && syncStatus === 'syncing' && ' · syncing…'}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              signOut();
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AppShell() {
   const [mode, setMode] = useState(() => {
     try {
       return localStorage.getItem('songEngineer_mode') || 'home';
@@ -152,8 +205,9 @@ function App() {
           </button>
         </nav>
 
-        <div className="se-shell-right">
+        <div className="se-shell-right se-shell-actions">
           <span className="se-pill">{modeLabel}</span>
+          <AccountControl />
         </div>
       </header>
 
@@ -162,7 +216,17 @@ function App() {
         {mode === 'write' && <WriteStudio />}
         {mode === 'sing' && <SingStudio />}
       </main>
+
+      <AuthModal />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
   );
 }
 

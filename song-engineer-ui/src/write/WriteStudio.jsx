@@ -18,6 +18,8 @@ import {
   lastChordFromLyrics,
   chordsMatch,
 } from './chordEngine';
+import { getLibrary, setLibrary, getDraft, setDraft } from '../lib/userStore';
+import { useAuth } from '../lib/AuthContext';
 import './WriteStudio.css';
 
 const chordsMatchLoose = chordsMatch;
@@ -238,9 +240,11 @@ const SONG_TECHNIQUES = [
 ];
 
 function WriteStudio() {
+  const { user, isLoggedIn } = useAuth();
   const [lyrics, setLyrics] = useState("");
   const [songTitle, setSongTitle] = useState("Untitled Song");
   const [activeSongId, setActiveSongId] = useState(null);
+  const [librarySongs, setLibrarySongs] = useState(() => getLibrary());
 
   const [projectKey, setProjectKey] = useState("C");
   const [harmonyComplexity, setHarmonyComplexity] = useState('simple'); // simple | color | jazz
@@ -817,69 +821,119 @@ function WriteStudio() {
     return syllable(clean); 
   };
 
+  const refreshLibrary = () => setLibrarySongs(getLibrary());
+
   const saveToLibrary = () => {
-    if (!lyrics.trim() && !audioData) return alert("Write or record something first!");
-    const library = JSON.parse(localStorage.getItem('songEngineer_library') || "[]");
+    if (!lyrics.trim() && !audioData) return alert('Write or record something first!');
+    const library = getLibrary();
     if (activeSongId) {
-      const songIndex = library.findIndex(s => s.id === activeSongId);
+      const songIndex = library.findIndex((s) => s.id === activeSongId);
       if (songIndex >= 0) {
-        library[songIndex].title = songTitle; library[songIndex].content = lyrics;
+        library[songIndex].title = songTitle;
+        library[songIndex].content = lyrics;
         library[songIndex].audioData = audioData;
         library[songIndex].date = new Date().toLocaleDateString();
-        localStorage.setItem('songEngineer_library', JSON.stringify(library));
-        return alert(`"${songTitle}" updated!`);
+        setLibrary(library);
+        refreshLibrary();
+        return alert(
+          `"${songTitle}" updated!${isLoggedIn ? ' (saved to your account)' : ' (saved on this device)'}`
+        );
       }
     }
     const newId = Date.now();
-    const newSong = { id: newId, title: songTitle, content: lyrics, audioData: audioData, date: new Date().toLocaleDateString() };
-    localStorage.setItem('songEngineer_library', JSON.stringify([newSong, ...library]));
-    setActiveSongId(newId); alert(`"${songTitle}" saved to library!`);
+    const newSong = {
+      id: newId,
+      title: songTitle,
+      content: lyrics,
+      audioData,
+      date: new Date().toLocaleDateString(),
+    };
+    setLibrary([newSong, ...library]);
+    setActiveSongId(newId);
+    refreshLibrary();
+    alert(`"${songTitle}" saved${isLoggedIn ? ' to your account' : ' on this device'}!`);
   };
 
   const handleNewSong = () => {
     if (lyrics.trim().length > 0 || audioData) {
       if (window.confirm(`Save "${songTitle}" before starting a new song?`)) saveToLibrary();
     }
-    setLyrics(""); setSongTitle("Untitled Song"); setAudioData(null);
-    setActiveSongId(null); setActiveMenu(null); setPlayingProgIndex(null); 
+    setLyrics('');
+    setSongTitle('Untitled Song');
+    setAudioData(null);
+    setActiveSongId(null);
+    setActiveMenu(null);
+    setPlayingProgIndex(null);
   };
 
   const renderLyricsIDE = () => {
-    const clicheRegex = new RegExp("(" + CLICHES.join("|") + ")", "gi");
+    const clicheRegex = new RegExp('(' + CLICHES.join('|') + ')', 'gi');
     const lines = lyrics.split('\n');
     return lines.map((line, i) => {
       if (/^\[(Verse|Chorus|Bridge|Pre-Chorus|Outro).*?\]/i.test(line.trim())) {
-        return <span key={i}><span className="section-highlight">{line}</span>{i < lines.length - 1 ? '\n' : ''}</span>;
+        return (
+          <span key={i}>
+            <span className="section-highlight">{line}</span>
+            {i < lines.length - 1 ? '\n' : ''}
+          </span>
+        );
       }
       const parts = line.split(/(\[[A-G][b#]?[a-zA-Z0-9]*[ø]?[7]?[b]?[5]?\])/g);
       const renderedParts = parts.map((part, j) => {
-        if (part.startsWith('[') && part.endsWith(']')) return <span key={j} className="chord-highlight">{part}</span>;
+        if (part.startsWith('[') && part.endsWith(']'))
+          return (
+            <span key={j} className="chord-highlight">
+              {part}
+            </span>
+          );
         const subParts = part.split(clicheRegex);
         return subParts.map((sp, k) => {
-          if (new RegExp("^(" + CLICHES.join("|") + ")$", "i").test(sp)) return <span key={k} className="cliche-highlight" title="Cliché Detected!">{sp}</span>;
+          if (new RegExp('^(' + CLICHES.join('|') + ')$', 'i').test(sp))
+            return (
+              <span key={k} className="cliche-highlight" title="Cliché Detected!">
+                {sp}
+              </span>
+            );
           return <span key={k}>{sp}</span>;
         });
       });
-      return <span key={i}>{renderedParts}{i < lines.length - 1 ? '\n' : ''}</span>;
+      return (
+        <span key={i}>
+          {renderedParts}
+          {i < lines.length - 1 ? '\n' : ''}
+        </span>
+      );
     });
   };
 
-  // --- LOCAL STORAGE SYNCS ---
+  // Load draft for current user (or guest) + reload when account changes
   useEffect(() => {
-    const savedLyrics = localStorage.getItem("song_engineer_lyrics");
-    const savedTitle = localStorage.getItem("song_engineer_title");
-    const savedId = localStorage.getItem("song_engineer_id");
-    const savedAudio = localStorage.getItem("song_engineer_audio");
-    
-    if (savedLyrics) setLyrics(savedLyrics); if (savedTitle) setSongTitle(savedTitle);
-    if (savedId) setActiveSongId(Number(savedId)); if (savedAudio) setAudioData(savedAudio);
+    const d = getDraft();
+    if (d.lyrics) setLyrics(d.lyrics);
+    else setLyrics('');
+    if (d.title) setSongTitle(d.title);
+    else setSongTitle('Untitled Song');
+    if (d.id) setActiveSongId(Number(d.id));
+    else setActiveSongId(null);
+    if (d.audio) setAudioData(d.audio);
+    else setAudioData(null);
+    refreshLibrary();
+  }, [user?.id]);
+
+  useEffect(() => {
+    const onData = () => refreshLibrary();
+    window.addEventListener('se-user-data-changed', onData);
+    return () => window.removeEventListener('se-user-data-changed', onData);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("song_engineer_title", songTitle); localStorage.setItem("song_engineer_lyrics", lyrics); 
-    if (audioData) localStorage.setItem("song_engineer_audio", audioData); else localStorage.removeItem("song_engineer_audio");
-    if (activeSongId) localStorage.setItem("song_engineer_id", activeSongId.toString()); else localStorage.removeItem("song_engineer_id");
-  }, [songTitle, lyrics, activeSongId, audioData]);
+    setDraft({
+      title: songTitle,
+      lyrics,
+      id: activeSongId,
+      audio: audioData,
+    });
+  }, [songTitle, lyrics, activeSongId, audioData, user?.id]);
 
 
   // --- SCROLL SYNC ENGINE ---
@@ -1787,8 +1841,13 @@ function WriteStudio() {
             <div className="drawer-content">
               <p className="ws-eyebrow">Your songs</p>
               <h3>Song Library</h3>
+              <p className="hp-intro" style={{ marginBottom: 12 }}>
+                {isLoggedIn
+                  ? 'Saved to your account (and this device).'
+                  : 'Saved on this device only. Sign in to keep songs with your account.'}
+              </p>
               <div className="song-list">
-                {JSON.parse(localStorage.getItem('songEngineer_library') || '[]').map((song) => (
+                {librarySongs.map((song) => (
                   <div key={song.id} className="library-card">
                     <button
                       type="button"
@@ -1808,11 +1867,9 @@ function WriteStudio() {
                       type="button"
                       className="library-delete"
                       onClick={() => {
-                        const lib = JSON.parse(localStorage.getItem('songEngineer_library') || '[]');
-                        localStorage.setItem(
-                          'songEngineer_library',
-                          JSON.stringify(lib.filter((s) => s.id !== song.id))
-                        );
+                        const lib = getLibrary().filter((s) => s.id !== song.id);
+                        setLibrary(lib);
+                        refreshLibrary();
                         if (activeSongId === song.id) handleNewSong();
                         else setActiveMenu('library');
                       }}
@@ -1821,7 +1878,7 @@ function WriteStudio() {
                     </button>
                   </div>
                 ))}
-                {JSON.parse(localStorage.getItem('songEngineer_library') || '[]').length === 0 && (
+                {librarySongs.length === 0 && (
                   <div className="lit-empty">No saved songs yet. Write something and hit Save.</div>
                 )}
               </div>

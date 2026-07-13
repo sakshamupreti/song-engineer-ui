@@ -4,6 +4,8 @@ import { VocalCoach, TECHNIQUE_GUIDE } from './lib/coach';
 import { EXERCISES, CATEGORY_LABELS, buildPattern } from './lib/exercises';
 import { unifyVowelAnalysis } from './lib/vowel-fusion';
 import { TanpuraEngine, TANPURA_KEYS, TANPURA_STYLES, noteFreq } from './lib/tanpura';
+import { getProgress, setProgress as persistProgress } from '../lib/userStore';
+import { useAuth } from '../lib/AuthContext';
 import './SingStudio.css';
 
 // Lazy vision helpers (MediaPipe is large — load only when camera is used)
@@ -14,8 +16,6 @@ function loadVisionModule() {
   }
   return visionModulePromise;
 }
-
-const STORE_KEY = 'songEngineer_vocal_progress_v1';
 
 const defaultProgress = () => ({
   sessions: 0,
@@ -28,15 +28,11 @@ const defaultProgress = () => ({
 });
 
 function loadProgress() {
-  try {
-    return { ...defaultProgress(), ...JSON.parse(localStorage.getItem(STORE_KEY) || '{}') };
-  } catch {
-    return defaultProgress();
-  }
+  return { ...defaultProgress(), ...getProgress() };
 }
 
 function saveProgress(p) {
-  localStorage.setItem(STORE_KEY, JSON.stringify(p));
+  persistProgress(p);
 }
 
 function lerp(a, b, t) {
@@ -138,10 +134,21 @@ export default function SingStudio() {
   const [recState, setRecState] = useState({ recording: false, url: null, label: 'Idle', time: '0:00' });
   const recTimerRef = useRef(null);
 
+  const { user, isLoggedIn } = useAuth();
   const [progress, setProgress] = useState(loadProgress);
   const sessionStartedRef = useRef(null);
   const lastTipKeyRef = useRef('');
   const lastTipsAtRef = useRef(0);
+
+  useEffect(() => {
+    setProgress(loadProgress());
+  }, [user?.id]);
+
+  useEffect(() => {
+    const onData = () => setProgress(loadProgress());
+    window.addEventListener('se-user-data-changed', onData);
+    return () => window.removeEventListener('se-user-data-changed', onData);
+  }, []);
 
   // Tanpura / drone practice
   const [tanpuraOn, setTanpuraOn] = useState(false);
@@ -1141,21 +1148,36 @@ export default function SingStudio() {
             <div className="sg-live-layout">
               <div className="sg-live-primary">
                 <div className="sg-card sg-hero">
-                  <div className="sg-pitch-stage">
-                    <canvas ref={pitchCanvasRef} width={800} height={260} />
-                    <div className="sg-pitch-readout">
-                      <div className="sg-note-big">{display.note}</div>
-                      <div className="sg-freq-row">
-                        <span>{display.freq}</span>
-                        <span className="sep">·</span>
-                        <span style={{ color: display.centsColor }}>{display.cents}</span>
+                  {/* Note + cents above the gauge so the dial stays visible on phones */}
+                  <div className="sg-pitch-head">
+                    <div className="sg-note-big">{display.note}</div>
+                    <div className="sg-freq-row">
+                      <span>{display.freq}</span>
+                      <span className="sep">·</span>
+                      <span style={{ color: display.centsColor }}>{display.cents}</span>
+                    </div>
+                    <div className={`sg-target-row ${targetLock ? 'visible' : 'hidden'}`}>
+                      {targetLock
+                        ? <>Target <strong>{notes.find((n) => n.midi === targetMidi)?.label || '—'}</strong></>
+                        : '\u00A0'}
+                    </div>
+                    <div className="sg-live-tuner-bar" aria-label="Intonation tuner">
+                      <div className="sg-tuner-track sg-tuner-track-live">
+                        <div className="sg-tuner-center" />
+                        <div
+                          className="sg-tuner-needle"
+                          style={{ left: `${display.needlePct ?? 50}%` }}
+                        />
                       </div>
-                      <div className={`sg-target-row ${targetLock ? 'visible' : 'hidden'}`}>
-                        {targetLock
-                          ? <>Target <strong>{notes.find((n) => n.midi === targetMidi)?.label || '—'}</strong></>
-                          : '\u00A0'}
+                      <div className="sg-live-tuner-labels">
+                        <span>−50¢</span>
+                        <span className="sg-live-tuner-mid">in tune</span>
+                        <span>+50¢</span>
                       </div>
                     </div>
+                  </div>
+                  <div className="sg-pitch-stage">
+                    <canvas ref={pitchCanvasRef} width={800} height={260} />
                   </div>
                   <div className="sg-meters">
                     {[
@@ -1721,8 +1743,13 @@ export default function SingStudio() {
           <section className="sg-view">
             <header className="sg-view-header">
               <div>
-                <p className="sg-eyebrow">Local history</p>
+                <p className="sg-eyebrow">{isLoggedIn ? 'Account history' : 'Device history'}</p>
                 <h3>Your Progress</h3>
+                <p className="sg-hint" style={{ marginTop: 6 }}>
+                  {isLoggedIn
+                    ? 'Synced with your account when online.'
+                    : 'Saved on this device. Sign in to keep progress with your account.'}
+                </p>
               </div>
               <div className="sg-btn-row">
                 <button

@@ -690,3 +690,214 @@ async def get_words(word: str, query_type: str, sub_type: str = "Perfect", sylla
 @app.post("/api/chords")
 async def get_chords(req: ChordRequest):
     return generate_chords(req.key, req.last_chord, req.jazz_mode)
+
+# ==================== ACCOUNTS + CLOUD SAVE ====================
+import os
+import json
+import sqlite3
+import hashlib
+import hmac
+import base64
+import time
+import secrets
+from pathlib import Path
+from typing import Optional, List, Dict, Any
+from fastapi import Header, HTTPException
+
+AUTH_SECRET = os.environ.get("SE_AUTH_SECRET", "songengineer-dev-secret-change-me")
+DATA_DIR = Path(os.environ.get("SE_DATA_DIR", "/tmp/songengineer"))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "accounts.db"
+
+
+def _db():
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _init_auth_db():
+    conn = _db()
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            name TEXT,
+            salt TEXT NOT NULL,
+            password_hash TEXT NOT NULL,
+            library_json TEXT DEFAULT '[]',
+            progress_json TEXT DEFAULT '{}',
+            created_at REAL,
+            updated_at REAL
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
+
+
+_init_auth_db()
+
+
+def _hash_password(password: str, salt: Optional[str] = None):
+    if salt is None:
+        salt = base64.b64encode(secrets.token_bytes(16)).decode("ascii")
+    salt_bytes = base64.b64decode(salt.encode("ascii"))
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt_bytes, 100_000)
+    return base64.b64encode(dk).decode("ascii"), salt
+
+
+def _b64url(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode("ascii").rstrip("=")
+
+
+def _b64url_decode(s: str) -> bytes:
+    pad = "=" * (-len(s) % 4)
+    return base64.urlsafe_b64decode(s + pad)
+
+
+def _make_token(user_id: str, email: str) -> str:
+    header = _b64url(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
+    payload = _b64url(
+        json.dumps(
+            {
+                "sub": user_id,
+                "email": email,
+                "exp": int(time.time()) + 60 * 60 * 24 * 30,
+            }
+        ).encode()
+    )
+    sig = _b64url(
+        hmac.new(AUTH_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()
+    )
+    return f"{header}.{payload}.{sig}"
+
+
+def _verify_token(token: str) -> dict:
+    try:
+        header_b, payload_b, sig_b = token.split(".")
+        expect = _b64url(
+            hmac.new(
+                AUTH_SECRET.encode(), f"{header_b}.{payload_b}".encode(), hashlib.sha256
+            ).digest()
+        )
+        if not hmac.compare_digest(expect, sig_b):
+            raise HTTPException(status_code=401, detail="Invalid token")
+        payload = json.loads(_b64url_decode(payload_b))
+        if payload.get("exp", 0) < time.time():
+            raise HTTPException(status_code=401, detail="Token expired")
+        return payload
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def _user_from_auth(authorization: Optional[str]):
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing authorization")
+    token = authorization.split(" ", 1)[1].strip()
+    payload = _verify_token(token)
+    conn = _db()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (payload["sub"],)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=401, detail="User not found")
+    return row
+
+
+class AuthBody(BaseModel):
+    email: str
+    password: str
+    name: str = ""
+
+
+class UserDataBody(BaseModel):
+    library: List[Any] = []
+    progress: Dict[str, Any] = {}
+
+
+@app.post("/api/auth/register")
+async def auth_register(body: AuthBody):
+    email = (body.email or "").strip().lower()
+    password = body.password or ""
+    name = (body.name or "").strip()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Valid email required")
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    pw_hash, salt = _hash_password(password)
+    user_id = secrets.token_hex(12)
+    now = time.time()
+    conn = _db()
+    try:
+        conn.execute(
+            """
+            INSERT INTO users (id, email, name, salt, password_hash, library_json, progress_json, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, '[]', '{}', ?, ?)
+            """,
+            (user_id, email, name, salt, pw_hash, now, now),
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        raise HTTPException(status_code=409, detail="An account with this email already exists")
+    conn.close()
+    token = _make_token(user_id, email)
+    return {"token": token, "user": {"id": user_id, "email": email, "name": name}}
+
+
+@app.post("/api/auth/login")
+async def auth_login(body: AuthBody):
+    email = (body.email or "").strip().lower()
+    password = body.password or ""
+    conn = _db()
+    row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    pw_hash, _ = _hash_password(password, row["salt"])
+    if not hmac.compare_digest(pw_hash, row["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = _make_token(row["id"], row["email"])
+    return {
+        "token": token,
+        "user": {"id": row["id"], "email": row["email"], "name": row["name"] or ""},
+    }
+
+
+@app.get("/api/me/data")
+async def get_my_data(authorization: Optional[str] = Header(default=None)):
+    row = _user_from_auth(authorization)
+    try:
+        library = json.loads(row["library_json"] or "[]")
+    except Exception:
+        library = []
+    try:
+        progress = json.loads(row["progress_json"] or "{}")
+    except Exception:
+        progress = {}
+    return {"library": library, "progress": progress}
+
+
+@app.put("/api/me/data")
+async def put_my_data(body: UserDataBody, authorization: Optional[str] = Header(default=None)):
+    row = _user_from_auth(authorization)
+    library = body.library if isinstance(body.library, list) else []
+    progress = body.progress if isinstance(body.progress, dict) else {}
+    raw = json.dumps({"library": library, "progress": progress})
+    if len(raw) > 4_500_000:
+        raise HTTPException(status_code=413, detail="Data too large — remove large voice memos and retry")
+    conn = _db()
+    conn.execute(
+        """
+        UPDATE users SET library_json = ?, progress_json = ?, updated_at = ?
+        WHERE id = ?
+        """,
+        (json.dumps(library), json.dumps(progress), time.time(), row["id"]),
+    )
+    conn.commit()
+    conn.close()
+    return {"ok": True}

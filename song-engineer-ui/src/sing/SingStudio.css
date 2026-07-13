@@ -389,13 +389,61 @@
   flex-direction: column;
 }
 
+.sg-pitch-head {
+  text-align: center;
+  padding: 4px 8px 10px;
+  flex-shrink: 0;
+}
+
+.sg-pitch-head .sg-note-big {
+  margin: 0;
+}
+
+.sg-pitch-head .sg-freq-row {
+  justify-content: center;
+}
+
+.sg-pitch-head .sg-target-row {
+  margin-top: 4px;
+}
+
+.sg-live-tuner-bar {
+  margin: 12px auto 0;
+  max-width: 320px;
+  width: 100%;
+}
+
+.sg-tuner-track-live {
+  height: 10px;
+  margin: 0 0 6px;
+}
+
+.sg-live-tuner-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sg-muted);
+}
+
+.sg-live-tuner-mid {
+  color: var(--sg-teal);
+}
+
 .sg-live-primary .sg-pitch-stage {
-  flex: 1;
-  min-height: 200px;
+  flex: 1 1 auto;
+  min-height: 180px;
+  position: relative;
 }
 
 .sg-live-primary .sg-pitch-stage canvas {
+  width: 100%;
+  height: auto;
+  min-height: 160px;
   max-height: 260px;
+  display: block;
 }
 
 .sg-live-primary .sg-spectrum-card {
@@ -506,15 +554,13 @@
   background: rgba(0, 0, 0, 0.25);
 }
 
+/* Legacy overlay class kept for safety if referenced elsewhere */
 .sg-pitch-readout {
-  position: absolute;
-  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  padding-bottom: 18%;
 }
 
 .sg-note-big {
@@ -1609,17 +1655,43 @@
     width: 100%;
   }
 
+  .sg-live-primary .sg-hero {
+    flex: none;
+  }
+
+  .sg-pitch-head {
+    padding: 2px 4px 8px;
+  }
+
+  .sg-live-tuner-bar {
+    max-width: 100%;
+    margin-top: 10px;
+  }
+
+  .sg-tuner-track-live {
+    height: 12px;
+  }
+
   .sg-live-primary .sg-pitch-stage {
-    min-height: 160px;
+    min-height: 200px;
+    flex: none;
   }
 
   .sg-live-primary .sg-pitch-stage canvas {
-    max-height: 200px;
+    min-height: 200px;
+    max-height: 240px;
     width: 100%;
+    /* Force visible dial height on narrow screens */
+    aspect-ratio: 16 / 10;
+    object-fit: contain;
   }
 
   .sg-note-big {
-    font-size: clamp(2.4rem, 12vw, 3.2rem);
+    font-size: clamp(2.6rem, 14vw, 3.4rem);
+  }
+
+  .sg-meters {
+    margin-top: 10px;
   }
 
   .sg-vowel-card .sg-formant-canvas {
