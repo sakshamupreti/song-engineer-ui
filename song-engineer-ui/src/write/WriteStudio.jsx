@@ -984,6 +984,10 @@ function WriteStudio() {
 
   const functionMeta = FUNCTION_LABELS[currentFunction] || FUNCTION_LABELS['?'];
   const cadences = getCadences(projectKey, harmonyComplexity);
+  // No chord placed/played yet — context is the key's root, not a real selection
+  const noChordYet = playMode
+    ? !lastPlayedChord
+    : !/\[([A-G][b#]?[^\]]*)\]/.test(lyrics || '');
 
   return (
     <div className="write-studio">
@@ -1210,24 +1214,44 @@ function WriteStudio() {
                 <div className="drone-info">{projectKey} pedal — tune your ear to the key</div>
               </div>
 
-              {/* You are here */}
-              <div className="hp-here">
+              {/* Current / root chord — always clickable to insert or play */}
+              <button
+                type="button"
+                className={`hp-here ${noChordYet ? 'hp-here-start' : ''}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleSidebarChordClick(contextChord)}
+                title={
+                  playMode
+                    ? `Play ${contextChord}`
+                    : `Insert [${contextChord}]`
+                }
+              >
                 <div className="hp-here-top">
                   <div>
-                    <div className="chord-context-label">You are here</div>
+                    <div className="chord-context-label">
+                      {noChordYet ? 'Root chord · start here' : 'You are here'}
+                    </div>
                     <div className="chord-context-name">{contextChord}</div>
                   </div>
                   <div className="hp-here-meta">
                     {currentRoman && <span className="hp-roman">{currentRoman}</span>}
                     <span className={`hp-fn fn-${currentFunction}`}>{functionMeta.name}</span>
+                    <span className="hp-here-action">
+                      {playMode ? '▶ Play' : '＋ Insert'}
+                    </span>
                   </div>
                 </div>
                 <p className="chord-context-hint">
-                  {currentRole || (playMode
-                    ? 'Suggestions follow the last chord you played.'
-                    : 'Suggestions follow the last [chord] in your lyrics.')}
+                  {noChordYet
+                    ? playMode
+                      ? `Tap to play ${contextChord} (the key’s root) and set your starting point.`
+                      : `Tap to insert [${contextChord}] — the root of ${projectKey} — and get started.`
+                    : currentRole ||
+                      (playMode
+                        ? 'Tap to play this chord again. Suggestions follow the last chord you played.'
+                        : 'Tap to insert this chord again. Suggestions follow the last [chord] in your lyrics.')}
                 </p>
-              </div>
+              </button>
 
               {/* Ranked next moves — primary UX */}
               <div className="next-moves">

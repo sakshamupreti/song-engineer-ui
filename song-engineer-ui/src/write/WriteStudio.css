@@ -1788,11 +1788,44 @@
 }
 
 .hp-here {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
   background: rgba(224, 176, 122, 0.06);
   border: 1px solid rgba(224, 176, 122, 0.18);
   border-radius: 14px;
   padding: 12px 14px;
   margin-bottom: 14px;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+
+.hp-here:hover {
+  border-color: rgba(224, 176, 122, 0.45);
+  background: rgba(224, 176, 122, 0.12);
+}
+
+.hp-here:active {
+  transform: scale(0.99);
+}
+
+.hp-here:focus-visible {
+  outline: 2px solid rgba(224, 176, 122, 0.55);
+  outline-offset: 2px;
+}
+
+/* No chord chosen yet — stronger “start here” cue */
+.hp-here-start {
+  border-style: dashed;
+  border-color: rgba(224, 176, 122, 0.4);
+  background: rgba(224, 176, 122, 0.1);
+  box-shadow: 0 0 0 1px rgba(224, 176, 122, 0.08);
+}
+
+.hp-here-start .chord-context-label {
+  color: var(--ws-gold);
 }
 
 .hp-here-top {
@@ -1824,6 +1857,18 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
+}
+
+.hp-here-action {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1a1210;
+  background: linear-gradient(135deg, #c4787a, #e0b07a);
+  padding: 5px 10px;
+  border-radius: 999px;
+  margin-top: 2px;
 }
 
 .hp-roman {
