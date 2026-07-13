@@ -691,53 +691,70 @@ async def get_words(word: str, query_type: str, sub_type: str = "Perfect", sylla
 async def get_chords(req: ChordRequest):
     return generate_chords(req.key, req.last_chord, req.jazz_mode)
 
-# ==================== ACCOUNTS + CLOUD SAVE ====================
+# ==================== ACCOUNTS + DURABLE CLOUD SAVE ====================
+# Users + library/progress stored on JSONBlob so data survives Render restarts.
 import os
 import json
-import sqlite3
 import hashlib
 import hmac
 import base64
 import time
 import secrets
-from pathlib import Path
+import threading
 from typing import Optional, List, Dict, Any
 from fastapi import Header, HTTPException
+import requests
 
-AUTH_SECRET = os.environ.get("SE_AUTH_SECRET", "songengineer-dev-secret-change-me")
-DATA_DIR = Path(os.environ.get("SE_DATA_DIR", "/tmp/songengineer"))
-DATA_DIR.mkdir(parents=True, exist_ok=True)
-DB_PATH = DATA_DIR / "accounts.db"
+AUTH_SECRET = os.environ.get("SE_AUTH_SECRET", "songengineer-prod-sync-v3")
+BLOB_ID = os.environ.get("SE_SYNC_BLOB_ID", "019f598e-ee08-7540-9d84-b120d0fc142a")
+BLOB_URL = f"https://jsonblob.com/api/jsonBlob/{BLOB_ID}"
 
-
-def _db():
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    return conn
+_store_lock = threading.Lock()
+_store_cache: Optional[dict] = None
+_store_cache_at = 0.0
 
 
-def _init_auth_db():
-    conn = _db()
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            name TEXT,
-            salt TEXT NOT NULL,
-            password_hash TEXT NOT NULL,
-            library_json TEXT DEFAULT '[]',
-            progress_json TEXT DEFAULT '{}',
-            created_at REAL,
-            updated_at REAL
-        )
-        """
+def _empty_store() -> dict:
+    return {"users": {}, "meta": {"app": "songengineer", "v": 3}}
+
+
+def _load_store(force: bool = False) -> dict:
+    global _store_cache, _store_cache_at
+    now = time.time()
+    if not force and _store_cache is not None and now - _store_cache_at < 2.0:
+        return _store_cache
+    try:
+        r = requests.get(BLOB_URL, headers={"Accept": "application/json"}, timeout=20)
+        r.raise_for_status()
+        data = r.json()
+        if not isinstance(data, dict):
+            data = _empty_store()
+        if "users" not in data or not isinstance(data["users"], dict):
+            data["users"] = {}
+        _store_cache = data
+        _store_cache_at = now
+        return data
+    except Exception as e:
+        print("store load failed", e)
+        if _store_cache is not None:
+            return _store_cache
+        _store_cache = _empty_store()
+        _store_cache_at = now
+        return _store_cache
+
+
+def _save_store(data: dict) -> None:
+    global _store_cache, _store_cache_at
+    data.setdefault("meta", {})["updated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    r = requests.put(
+        BLOB_URL,
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        data=json.dumps(data),
+        timeout=25,
     )
-    conn.commit()
-    conn.close()
-
-
-_init_auth_db()
+    r.raise_for_status()
+    _store_cache = data
+    _store_cache_at = time.time()
 
 
 def _hash_password(password: str, salt: Optional[str] = None):
@@ -758,14 +775,12 @@ def _b64url_decode(s: str) -> bytes:
 
 
 def _make_token(user_id: str, email: str) -> str:
-    header = _b64url(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
+    # compact JSON (no spaces) for stable tokens
+    header = _b64url(json.dumps({"alg": "HS256", "typ": "JWT"}, separators=(",", ":")).encode())
     payload = _b64url(
         json.dumps(
-            {
-                "sub": user_id,
-                "email": email,
-                "exp": int(time.time()) + 60 * 60 * 24 * 30,
-            }
+            {"sub": user_id, "email": email, "exp": int(time.time()) + 60 * 60 * 24 * 90},
+            separators=(",", ":"),
         ).encode()
     )
     sig = _b64url(
@@ -783,28 +798,35 @@ def _verify_token(token: str) -> dict:
             ).digest()
         )
         if not hmac.compare_digest(expect, sig_b):
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise HTTPException(status_code=401, detail="Invalid token — please sign in again")
         payload = json.loads(_b64url_decode(payload_b))
         if payload.get("exp", 0) < time.time():
-            raise HTTPException(status_code=401, detail="Token expired")
+            raise HTTPException(status_code=401, detail="Token expired — please sign in again")
         return payload
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid token — please sign in again")
 
 
-def _user_from_auth(authorization: Optional[str]):
+def _find_user(store: dict, user_id: str) -> Optional[dict]:
+    for u in store.get("users", {}).values():
+        if u.get("id") == user_id:
+            return u
+    return None
+
+
+def _user_from_auth(authorization: Optional[str]) -> dict:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Missing authorization")
+        raise HTTPException(status_code=401, detail="Missing authorization — please sign in")
     token = authorization.split(" ", 1)[1].strip()
     payload = _verify_token(token)
-    conn = _db()
-    row = conn.execute("SELECT * FROM users WHERE id = ?", (payload["sub"],)).fetchone()
-    conn.close()
-    if not row:
-        raise HTTPException(status_code=401, detail="User not found")
-    return row
+    with _store_lock:
+        store = _load_store()
+        user = _find_user(store, payload.get("sub", ""))
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found — please sign in again")
+        return dict(user)
 
 
 class AuthBody(BaseModel):
@@ -831,73 +853,97 @@ async def auth_register(body: AuthBody):
     pw_hash, salt = _hash_password(password)
     user_id = secrets.token_hex(12)
     now = time.time()
-    conn = _db()
-    try:
-        conn.execute(
-            """
-            INSERT INTO users (id, email, name, salt, password_hash, library_json, progress_json, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, '[]', '{}', ?, ?)
-            """,
-            (user_id, email, name, salt, pw_hash, now, now),
-        )
-        conn.commit()
-    except sqlite3.IntegrityError:
-        conn.close()
-        raise HTTPException(status_code=409, detail="An account with this email already exists")
-    conn.close()
+
+    with _store_lock:
+        store = _load_store(force=True)
+        if email in store["users"]:
+            raise HTTPException(status_code=409, detail="An account with this email already exists")
+        store["users"][email] = {
+            "id": user_id,
+            "email": email,
+            "name": name,
+            "salt": salt,
+            "password_hash": pw_hash,
+            "library": [],
+            "progress": {},
+            "created_at": now,
+            "updated_at": now,
+        }
+        try:
+            _save_store(store)
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Could not save account: {e}")
+
     token = _make_token(user_id, email)
-    return {"token": token, "user": {"id": user_id, "email": email, "name": name}}
+    return {"token": token, "user": {"id": user_id, "email": email, "name": name}, "source": "cloud"}
 
 
 @app.post("/api/auth/login")
 async def auth_login(body: AuthBody):
     email = (body.email or "").strip().lower()
     password = body.password or ""
-    conn = _db()
-    row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-    conn.close()
-    if not row:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    pw_hash, _ = _hash_password(password, row["salt"])
-    if not hmac.compare_digest(pw_hash, row["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = _make_token(row["id"], row["email"])
-    return {
-        "token": token,
-        "user": {"id": row["id"], "email": row["email"], "name": row["name"] or ""},
-    }
+
+    with _store_lock:
+        store = _load_store(force=True)
+        user = store["users"].get(email)
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        pw_hash, _ = _hash_password(password, user.get("salt"))
+        if not hmac.compare_digest(pw_hash, user.get("password_hash", "")):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        token = _make_token(user["id"], user["email"])
+        return {
+            "token": token,
+            "user": {"id": user["id"], "email": user["email"], "name": user.get("name") or ""},
+            "source": "cloud",
+        }
 
 
 @app.get("/api/me/data")
 async def get_my_data(authorization: Optional[str] = Header(default=None)):
-    row = _user_from_auth(authorization)
-    try:
-        library = json.loads(row["library_json"] or "[]")
-    except Exception:
-        library = []
-    try:
-        progress = json.loads(row["progress_json"] or "{}")
-    except Exception:
-        progress = {}
+    user = _user_from_auth(authorization)
+    library = user.get("library") if isinstance(user.get("library"), list) else []
+    progress = user.get("progress") if isinstance(user.get("progress"), dict) else {}
     return {"library": library, "progress": progress}
 
 
 @app.put("/api/me/data")
 async def put_my_data(body: UserDataBody, authorization: Optional[str] = Header(default=None)):
-    row = _user_from_auth(authorization)
+    auth_user = _user_from_auth(authorization)
     library = body.library if isinstance(body.library, list) else []
     progress = body.progress if isinstance(body.progress, dict) else {}
     raw = json.dumps({"library": library, "progress": progress})
     if len(raw) > 4_500_000:
         raise HTTPException(status_code=413, detail="Data too large — remove large voice memos and retry")
-    conn = _db()
-    conn.execute(
-        """
-        UPDATE users SET library_json = ?, progress_json = ?, updated_at = ?
-        WHERE id = ?
-        """,
-        (json.dumps(library), json.dumps(progress), time.time(), row["id"]),
-    )
-    conn.commit()
-    conn.close()
+
+    email = auth_user.get("email", "").lower()
+    with _store_lock:
+        store = _load_store(force=True)
+        user = store["users"].get(email)
+        if not user or user.get("id") != auth_user.get("id"):
+            # try by id
+            user = _find_user(store, auth_user.get("id", ""))
+            if not user:
+                raise HTTPException(status_code=401, detail="User not found — please sign in again")
+            email = user["email"]
+        store["users"][email]["library"] = library
+        store["users"][email]["progress"] = progress
+        store["users"][email]["updated_at"] = time.time()
+        try:
+            _save_store(store)
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Could not sync data: {e}")
     return {"ok": True}
+
+
+@app.get("/api/auth/health")
+async def auth_health():
+    try:
+        store = _load_store(force=True)
+        return {
+            "ok": True,
+            "users": len(store.get("users", {})),
+            "blob": BLOB_ID[:8] + "…",
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}

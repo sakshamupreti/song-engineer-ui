@@ -6,14 +6,18 @@
  */
 
 /**
- * API base — same-origin Vercel /api (durable).
- * Override with VITE_API_URL if needed.
+ * API bases (tried in order):
+ * 1) VITE_API_URL override
+ * 2) Same-origin /api (if Vercel functions are live)
+ * 3) Render durable backend (JSONBlob-backed accounts)
  */
 function resolveApiBases() {
   const env = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_API_URL : '';
   if (env) return [env.replace(/\/$/, '')];
-  // '' => https://songengineer.com/api/... on production
-  return [''];
+  return [
+    '', // songengineer.com/api when Vercel functions deploy
+    'https://song-engineer-ui-2.onrender.com',
+  ];
 }
 
 const GUEST = {
@@ -190,20 +194,24 @@ async function apiOnce(base, path, { method = 'GET', body, token } = {}) {
   return data;
 }
 
-/** Try same-origin Vercel API first, then Render fallback */
+/**
+ * Try each API base. Skip to next on 404/network/5xx.
+ * On 401 from a base, try next (different JWT secrets) unless it's the last base.
+ */
 async function api(path, opts = {}) {
   const bases = resolveApiBases();
   let lastErr;
-  for (const base of bases) {
+  for (let i = 0; i < bases.length; i++) {
+    const base = bases[i];
+    const isLast = i === bases.length - 1;
     try {
       return await apiOnce(base, path, opts);
     } catch (err) {
       lastErr = err;
-      // Auth errors shouldn't fall through to another backend with different secrets
-      if (err.status === 401 || err.status === 409 || err.status === 400 || err.status === 413) {
-        throw err;
-      }
-      // Network / 404 / 5xx → try next base
+      // Hard client errors that mean "stop" (except 401 when more bases remain)
+      if (err.status === 409 || err.status === 400 || err.status === 413) throw err;
+      if (err.status === 401 && isLast) throw err;
+      // 401 on intermediate base, or 404/5xx/network → try next
       continue;
     }
   }
